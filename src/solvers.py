@@ -1,29 +1,3 @@
-"""Convex programs that fit consistent support values to measurements.
-
-Both functions solve
-
-    minimise   sum_i loss(y_i - h_i)    subject to   h is consistent,
-
-where *consistent* means ``h_1 ... h_k`` are the support values of some convex body at
-the directions ``u_i``, and ``loss`` is squared (``"lsq"``, a QP) or absolute (``"lad"``,
-an LP). They differ in how consistency is written as linear constraints:
-
-``fit_local_2d`` (2D only)
-    With the directions sorted by angle ``t_i``, ``h`` is consistent iff for every ``i``
-    (cyclically)
-    ``h_{i-1} sin(t_{i+1} - t_i) - h_i sin(t_{i+1} - t_{i-1}) + h_{i+1} sin(t_i - t_{i-1}) >= 0``,
-    i.e. every halfspace touches the polygon cut out by its two neighbours
-    (Lele, Kulkarni & Willsky 1992). Only ``k`` constraints, so it scales to large ``k``.
-
-``fit_pairwise`` (any dimension)
-    ``h`` is consistent iff there are points ``x_i`` with ``<x_i, u_i> = h_i`` and
-    ``<x_j, u_i> <= h_i`` for all ``i, j``: the ``x_i`` are contact points of the body in
-    direction ``u_i``. This needs ``d*k`` variables and ``k^2`` constraints, handled by
-    constraint generation.
-"""
-
-from __future__ import annotations
-
 from typing import Literal
 
 import cvxpy as cp
@@ -33,24 +7,48 @@ import scipy.sparse as sp
 Loss = Literal['lsq', 'lad']
 
 
-def fit_local_2d(U: np.ndarray, y: np.ndarray, loss: Loss, solver: str | None) -> np.ndarray:
-    """Fitted support values using the ``k`` local constraints (2D only)."""
+def fit_local_2d(U: np.ndarray, y: np.ndarray, loss: Loss = 'lsq', solver: str | None = None) -> np.ndarray:
+    """
+    Consistent support values closest to ``y``, written with one local constraint per direction (2D only).
+
+    Solves ``min sum_i loss(y_i - h_i)`` subject to ``h`` being consistent: the support values of some convex body at
+    the directions ``u_i``. With the directions sorted by angle ``t_i``, ``h`` is consistent iff for every ``i``
+    (cyclically) ``h_{i-1} sin(t_{i+1} - t_i) - h_i sin(t_{i+1} - t_{i-1}) + h_{i+1} sin(t_i - t_{i-1}) >= 0``, that
+    is, every line ``<x, u_i> = h_i`` touches the polygon cut out by its two neighbours (Lele, Kulkarni & Willsky,
+    1992). These are ``k`` constraints, so the problem stays small for large ``k``.
+
+    Parameters
+    ----------
+    U : np.ndarray
+        distinct unit directions, not all in a closed half-plane, shape ``(k, 2)``
+    y : np.ndarray
+        measurements, shape ``(k,)``
+    loss : {'lsq', 'lad'}
+        squared error (a quadratic program) or absolute error (a linear program)
+    solver : str | None
+        cvxpy solver name; ``None`` uses Clarabel
+
+    Returns
+    -------
+    h : np.ndarray
+        fitted support values, in the order of ``U``, shape ``(k,)``
+    """
     if U.shape[1] != 2:
-        raise ValueError("the 'local' formulation is only available in 2D")
+        raise ValueError(f'the local formulation is only available in 2D, got directions of shape {U.shape}')
     k = U.shape[0]
     theta = np.arctan2(U[:, 1], U[:, 0])
     order = np.argsort(theta)
     t = theta[order]
     gaps = np.diff(np.append(t, t[0] + 2 * np.pi))  # t_{i+1} - t_i, wrapping around
     if np.any(gaps < 1e-12):
-        raise ValueError("directions must be distinct for the 'local' formulation")
+        raise ValueError('directions must be distinct for the local formulation')
     if np.any(gaps >= np.pi):
         raise ValueError('directions must not lie in a closed half-plane')
 
     a = gaps  # t_{i+1} - t_i
     b = np.roll(gaps, 1)  # t_i - t_{i-1}
     coef = np.column_stack([np.sin(a), -np.sin(a + b), np.sin(b)])
-    # rows are O(gap) in size; normalise them so the solver stays well conditioned for large k
+    # rows are O(gap) in size; normalising them keeps the solver well conditioned for large k
     coef /= np.linalg.norm(coef, axis=1, keepdims=True)
     idx = np.arange(k)
     cols = np.column_stack([np.roll(idx, 1), idx, np.roll(idx, -1)])
@@ -66,18 +64,40 @@ def fit_local_2d(U: np.ndarray, y: np.ndarray, loss: Loss, solver: str | None) -
 def fit_pairwise(
     U: np.ndarray,
     y: np.ndarray,
-    loss: Loss,
-    solver: str | None,
+    loss: Loss = 'lsq',
+    solver: str | None = None,
     n_neighbors: int = 12,
     max_rounds: int = 50,
 ) -> np.ndarray:
-    """Fitted support values using the pairwise constraints, by constraint generation.
+    """
+    Consistent support values closest to ``y``, written with contact points (any dimension).
 
-    Most of the ``k^2`` constraints ``<u_i, x_j> <= <u_i, x_i>`` are inactive: only
-    directions that are close to each other compete. We start from the constraints between
-    each direction and its nearest neighbours, solve, add every violated constraint and
-    repeat. A solution of a relaxation that satisfies all constraints is optimal for the
-    full problem, so the result is exact (up to solver tolerance).
+    Solves ``min sum_i loss(y_i - h_i)`` subject to ``h`` being consistent. ``h`` is consistent iff there are points
+    ``x_i`` with ``<x_i, u_i> = h_i`` and ``<x_j, u_i> <= h_i`` for all ``i, j``: the ``x_i`` are contact points of
+    the body in direction ``u_i``. That is ``d k`` variables and ``k^2`` constraints, but only directions close to each
+    other compete, so most constraints are inactive. Constraint generation starts from each direction's
+    ``n_neighbors`` nearest directions, solves, adds every violated constraint and repeats; a solution that satisfies
+    all constraints is optimal for the full problem, so the result is exact up to the solver tolerance.
+
+    Parameters
+    ----------
+    U : np.ndarray
+        unit directions, not all in a closed hemisphere, shape ``(k, d)``
+    y : np.ndarray
+        measurements, shape ``(k,)``
+    loss : {'lsq', 'lad'}
+        squared error (a quadratic program) or absolute error (a linear program)
+    solver : str | None
+        cvxpy solver name; ``None`` uses Clarabel
+    n_neighbors : int
+        constraints per direction in the first round
+    max_rounds : int
+        rounds of constraint generation before giving up
+
+    Returns
+    -------
+    h : np.ndarray
+        fitted support values, shape ``(k,)``
     """
     k, d = U.shape
     X = cp.Variable(k * d)  # contact points x_i, stacked row by row
@@ -85,7 +105,6 @@ def fit_pairwise(
     h = S @ X  # h_i = <u_i, x_i>
     objective = _objective(y, h, loss)
 
-    # initial working set: nearest neighbours of every direction (by angle)
     m = min(n_neighbors, k - 1)
     nbrs = np.argsort(-(U @ U.T), axis=1)[:, 1 : m + 1]
     active = np.zeros((k, k), dtype=bool)
@@ -101,11 +120,11 @@ def fit_pairwise(
         if not violated.any():
             return hv
         active |= violated
-    raise RuntimeError('constraint generation did not converge')
+    raise RuntimeError(f'constraint generation did not converge in max_rounds={max_rounds} rounds')
 
 
 def _pair_matrix(U: np.ndarray, rows: np.ndarray, cols: np.ndarray) -> sp.csr_matrix:
-    """Sparse matrix whose row for pair ``(i, j)`` maps ``vec(X)`` to ``<u_i, x_j - x_i>``."""
+    # the row for pair (i, j) maps the stacked contact points to <u_i, x_j - x_i>
     k, d = U.shape
     m = rows.size
     r = np.repeat(np.arange(m), 2 * d)
@@ -122,9 +141,8 @@ def _objective(y: np.ndarray, h: cp.Expression, loss: Loss) -> cp.Minimize:
 
 def _solve(problem: cp.Problem, solver: str | None) -> None:
     if solver is None:
-        # cvxpy's default QP solver (OSQP) is first-order and stalls on these problems;
-        # the interior-point solver Clarabel is fast and accurate.
-        solver = cp.CLARABEL if cp.CLARABEL in cp.installed_solvers() else None
+        # cvxpy's default QP solver, OSQP, is first-order and stalls on these problems; Clarabel does not
+        solver = cp.CLARABEL
     problem.solve(solver=solver)
     if problem.status not in (cp.OPTIMAL, cp.OPTIMAL_INACCURATE):
-        raise RuntimeError(f'solver failed with status {problem.status!r}')
+        raise RuntimeError(f'solver {solver} failed with status {problem.status!r}')

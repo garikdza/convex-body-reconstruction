@@ -1,21 +1,27 @@
-"""Halfspace intersections: turning support values back into a polytope.
-
-A set of directions ``u_i`` and values ``h_i`` describes the polytope
-``P = {x : <x, u_i> <= h_i for all i}``. To list its vertices we need a point strictly
-inside it, which the Chebyshev centre provides.
-"""
-
-from __future__ import annotations
-
 import numpy as np
 from scipy.optimize import linprog
 from scipy.spatial import HalfspaceIntersection
 
 
 def chebyshev_center(U: np.ndarray, h: np.ndarray) -> tuple[np.ndarray, float]:
-    """Centre and radius of the largest ball inside ``{x : <x, u_i> <= h_i}``.
+    """
+    The largest ball inside the polyhedron ``{x : <x, u_i> <= h_i for all i}``.
 
-    Solved as a linear program: maximise ``r`` subject to ``<c, u_i> + r |u_i| <= h_i``.
+    Solved as the linear program: maximise ``r`` subject to ``<c, u_i> + r |u_i| <= h_i``.
+
+    Parameters
+    ----------
+    U : np.ndarray
+        halfspace normals, shape ``(k, d)``
+    h : np.ndarray
+        halfspace offsets, shape ``(k,)``
+
+    Returns
+    -------
+    center : np.ndarray
+        centre of the ball, shape ``(d,)``
+    radius : float
+        radius of the ball, 0 when the polyhedron has empty interior
     """
     k, d = U.shape
     norms = np.linalg.norm(U, axis=1)
@@ -36,14 +42,24 @@ def chebyshev_center(U: np.ndarray, h: np.ndarray) -> tuple[np.ndarray, float]:
 
 
 def halfspace_vertices(U: np.ndarray, h: np.ndarray) -> np.ndarray:
-    """Vertices of ``{x : <x, u_i> <= h_i for all i}`` (may include duplicates).
+    """
+    Vertices of the polytope ``{x : <x, u_i> <= h_i for all i}``.
 
-    Raises ``ValueError`` if the intersection is unbounded or has empty interior.
+    Parameters
+    ----------
+    U : np.ndarray
+        halfspace normals, shape ``(k, d)``
+    h : np.ndarray
+        halfspace offsets, shape ``(k,)``
+
+    Returns
+    -------
+    vertices : np.ndarray
+        vertices, shape ``(m, d)``; a vertex where more than ``d`` halfspaces meet can appear more than once
     """
     U = np.asarray(U, dtype=float)
     h = np.asarray(h, dtype=float)
     center, radius = chebyshev_center(U, h)
-    scale = max(1.0, float(np.abs(h).max()))
-    if radius <= 1e-9 * scale:
-        raise ValueError('halfspace intersection has (numerically) empty interior')
+    if radius <= 1e-9 * max(1.0, float(np.abs(h).max())):
+        raise ValueError('halfspace intersection has empty interior')
     return HalfspaceIntersection(np.column_stack([U, -h]), center).intersections
