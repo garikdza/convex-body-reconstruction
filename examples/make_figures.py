@@ -14,7 +14,7 @@ import numpy as np  # noqa: E402
 from matplotlib.animation import FuncAnimation, PillowWriter  # noqa: E402
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection  # noqa: E402
 
-import convex_recon as cr  # noqa: E402
+import src as cr  # noqa: E402
 
 OUT = Path(__file__).resolve().parent.parent / "docs" / "img"
 

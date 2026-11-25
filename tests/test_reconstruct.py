@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-import convex_recon as cr
+import src as cr
 
 
 def square():

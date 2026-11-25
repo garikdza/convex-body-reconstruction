@@ -57,7 +57,7 @@ virtualenv.
 
 ```python
 import numpy as np
-import convex_recon as cr
+import src as cr
 
 # an unknown body: a random polygon with rounded corners (Minkowski sum with a disk)
 K = cr.random_polygon(7, rng=0) + cr.Ellipsoid(0.1 * np.eye(2), np.zeros(2))
@@ -108,7 +108,7 @@ LP variant shrugs off outliers.
 ## Project layout
 
 ```
-convex_recon/
+src/
   reconstruct.py   the estimators (QP / LP, local and pairwise formulations)
   bodies.py        polytopes, ellipsoids, Minkowski sums, halfspace intersection
   directions.py    evenly spread directions on the circle / sphere (Fibonacci lattice)
