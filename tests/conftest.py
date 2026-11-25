@@ -1,14 +1,16 @@
 import numpy as np
 import pytest
 
-import src as cr
+from src import Polytope
 
 
 @pytest.fixture
-def square():
-    return cr.Polytope(np.array([[-1, -1], [1, -1], [1, 1], [-1, 1]], float))
+def square() -> Polytope:
+    """The square [-1, 1]^2."""
+    return Polytope(np.array([[-1, -1], [1, -1], [1, 1], [-1, 1]], dtype=float))
 
 
 @pytest.fixture
-def cube():
-    return cr.Polytope(np.array(np.meshgrid([-1, 1], [-1, 1], [-1, 1])).reshape(3, -1).T * 1.0)
+def cube() -> Polytope:
+    """The cube [-1, 1]^3."""
+    return Polytope(np.array(np.meshgrid([-1, 1], [-1, 1], [-1, 1])).reshape(3, -1).T.astype(float))
