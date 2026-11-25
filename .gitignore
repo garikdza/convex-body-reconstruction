@@ -27,9 +27,9 @@ htmlcov/
 
 # example figures and saved results: only the figures the README shows are tracked
 examples/figures/*
-!examples/figures/concept.png
+!examples/figures/support_function.png
 !examples/figures/reconstruction_2d.png
-!examples/figures/reconstruction_2d.gif
+!examples/figures/animation_2d.gif
 !examples/figures/reconstruction_3d.png
 !examples/figures/outliers.png
 !examples/figures/convergence.png
