@@ -40,14 +40,18 @@ worst-case upper bounds, and the measured slopes are steeper.
 
 ![Convergence](docs/img/convergence.png)
 
-## Install
+## Running it
 
 ```bash
-pip install git+https://github.com/garikdza/Convex_Body_Reconstruction
+git clone https://github.com/garikdza/Convex_Body_Reconstruction
+cd Convex_Body_Reconstruction
+uv sync                                   # installs NumPy, SciPy, cvxpy, matplotlib
+uv run pytest                             # run the tests
+uv run python examples/make_figures.py    # rebuild every figure in docs/img/ (~2 min)
 ```
 
-Requires Python ≥ 3.10, NumPy, SciPy and [cvxpy](https://www.cvxpy.org) (with the Clarabel solver).
-Add `matplotlib` for the figures.
+Requires Python ≥ 3.10. Without [uv](https://docs.astral.sh/uv/), use `pip install -e .` in a
+virtualenv.
 
 ## Quick start
 
@@ -111,11 +115,6 @@ convex_recon/
   metrics.py       Hausdorff and L2 distances via support functions
 examples/make_figures.py   regenerates every figure in this README
 tests/                     pytest suite
-```
-
-```bash
-uv sync && uv run pytest              # run the tests
-uv run python examples/make_figures.py  # rebuild docs/img/ (~2 min, mostly the benchmark)
 ```
 
 ## References
