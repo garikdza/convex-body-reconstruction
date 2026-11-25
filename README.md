@@ -104,7 +104,7 @@ LP variant shrugs off outliers.
 ## Project layout
 
 ```
-src/convex_recon/
+convex_recon/
   reconstruct.py   the estimators (QP / LP, local and pairwise formulations)
   bodies.py        polytopes, ellipsoids, Minkowski sums, halfspace intersection
   directions.py    evenly spread directions on the circle / sphere (Fibonacci lattice)
