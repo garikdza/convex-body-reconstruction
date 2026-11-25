@@ -3,70 +3,6 @@ import pytest
 
 import src as cr
 
-
-def square():
-    return cr.Polytope(np.array([[-1, -1], [1, -1], [1, 1], [-1, 1]], float))
-
-
-def cube():
-    return cr.Polytope(np.array(np.meshgrid([-1, 1], [-1, 1], [-1, 1])).reshape(3, -1).T * 1.0)
-
-
-# --- support functions and metrics -------------------------------------------------------
-
-
-def test_polytope_support():
-    U = np.array([[1, 0], [0, 1], [np.sqrt(0.5), np.sqrt(0.5)]])
-    np.testing.assert_allclose(square().support(U), [1, 1, np.sqrt(2)])
-
-
-def test_polytope_drops_interior_points():
-    P = cr.Polytope(np.array([[0, 0], [2, 0], [0, 2], [2, 2], [1, 1]], float))
-    assert len(P.vertices) == 4
-
-
-@pytest.mark.parametrize("dim", [2, 3])
-def test_support_points_attain_support(dim):
-    rng = np.random.default_rng(0)
-    A = rng.standard_normal((dim, dim)) + 2 * np.eye(dim)
-    P = cr.random_polygon(6, rng) if dim == 2 else cr.random_polytope(10, rng)
-    for K in [cr.Ellipsoid(A, rng.standard_normal(dim)), P, P + cr.Ellipsoid(A, np.zeros(dim))]:
-        U = cr.evenly_spread(50, dim)
-        np.testing.assert_allclose(np.einsum("ij,ij->i", K.support_points(U), U), K.support(U))
-
-
-def test_minkowski_sum_of_square_and_disk():
-    K = square() + cr.Ellipsoid(0.5 * np.eye(2), np.zeros(2))
-    # area of a square of side 2 rounded by radius 0.5: 4 + 4 * 2 * 0.5 + pi * 0.25
-    assert cr.to_polytope(K, 4000).volume == pytest.approx(8 + np.pi / 4, rel=1e-4)
-
-
-def test_from_halfspaces_roundtrip():
-    U = cr.circle_directions(4)
-    P = cr.Polytope.from_halfspaces(U, np.ones(4))
-    assert cr.hausdorff_distance(P, square()) < 1e-9
-
-
-def test_from_halfspaces_unbounded():
-    U = np.array([[1.0, 0.0], [0.0, 1.0], [np.sqrt(0.5), np.sqrt(0.5)]])
-    with pytest.raises(ValueError, match="unbounded"):
-        cr.Polytope.from_halfspaces(U, np.ones(3))
-
-
-def test_metrics():
-    big = cr.Polytope(2 * square().vertices)
-    assert cr.hausdorff_distance(square(), big) == pytest.approx(np.sqrt(2), rel=1e-6)
-    assert cr.hausdorff_distance(square(), square()) == 0
-    assert 0 < cr.l2_distance(square(), big) < cr.hausdorff_distance(square(), big)
-
-
-def test_sphere_directions_are_unit_and_balanced():
-    U = cr.sphere_directions(500)
-    np.testing.assert_allclose(np.linalg.norm(U, axis=1), 1)
-    assert np.linalg.norm(U.mean(axis=0)) < 1e-2
-
-
-# --- reconstruction ----------------------------------------------------------------------
 # Interior-point solvers return the optimum to ~1e-5 here (bodies have unit size), and
 # noise-free data are the hardest case because every constraint is active.
 TOL = 1e-4
@@ -82,16 +18,16 @@ def test_exact_measurements_are_reproduced_2d(method, formulation):
     np.testing.assert_allclose(rec.support_values, K.support(U), atol=TOL)
 
 
-def test_square_recovered_exactly_from_its_facet_normals():
+def test_square_recovered_exactly_from_its_facet_normals(square):
     U = cr.circle_directions(8)  # contains the 4 facet normals of the square
-    rec = cr.reconstruct(U, square().support(U))
-    assert cr.hausdorff_distance(rec.polytope, square()) < TOL
+    rec = cr.reconstruct(U, square.support(U))
+    assert cr.hausdorff_distance(rec.polytope, square) < TOL
 
 
-def test_cube_recovered_exactly_in_3d():
+def test_cube_recovered_exactly_in_3d(cube):
     U = np.vstack([np.eye(3), -np.eye(3), cr.sphere_directions(30)])
-    rec = cr.reconstruct(U, cube().support(U))
-    assert cr.hausdorff_distance(rec.polytope, cube()) < TOL
+    rec = cr.reconstruct(U, cube.support(U))
+    assert cr.hausdorff_distance(rec.polytope, cube) < TOL
     assert rec.polytope.volume == pytest.approx(8, rel=TOL)
 
 

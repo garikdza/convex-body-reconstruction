@@ -1,19 +1,16 @@
-"""Reconstruct convex bodies from noisy support-function measurements."""
+"""Reconstruct convex bodies from noisy support-function measurements.
 
-from .bodies import (
-    Ellipsoid,
-    MinkowskiSum,
-    Polytope,
-    measure,
-    random_polygon,
-    random_polytope,
-    to_polytope,
-)
+``src.plotting`` (needs matplotlib) is not imported here; import it explicitly.
+"""
+
+from .bodies import ConvexBody, Ellipsoid, MinkowskiSum, Polytope, to_polytope
 from .directions import circle_directions, evenly_spread, random_directions, sphere_directions
 from .metrics import hausdorff_distance, l2_distance
 from .reconstruct import Reconstruction, reconstruct
+from .simulate import measure, random_polygon, random_polytope
 
 __all__ = [
+    "ConvexBody",
     "Ellipsoid",
     "MinkowskiSum",
     "Polytope",

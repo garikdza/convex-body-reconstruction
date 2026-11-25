@@ -47,7 +47,8 @@ git clone https://github.com/garikdza/Convex_Body_Reconstruction
 cd Convex_Body_Reconstruction
 uv sync                                   # installs NumPy, SciPy, cvxpy, matplotlib
 uv run pytest                             # run the tests
-uv run python examples/make_figures.py    # rebuild every figure in docs/img/ (~2 min)
+uv run python examples/figures.py         # rebuild the figures in docs/img/
+uv run python examples/convergence.py     # rerun the benchmark
 ```
 
 Requires Python ≥ 3.10. Without [uv](https://docs.astral.sh/uv/), use `pip install -e .` in a
@@ -109,12 +110,19 @@ LP variant shrugs off outliers.
 
 ```
 src/
-  reconstruct.py   the estimators (QP / LP, local and pairwise formulations)
-  bodies.py        polytopes, ellipsoids, Minkowski sums, halfspace intersection
+  reconstruct.py   reconstruct(): validates input, picks a formulation, returns the estimate
+  solvers.py       the convex programs: 2D local constraints, pairwise + constraint generation
+  bodies.py        ConvexBody interface; Polytope, Ellipsoid, Minkowski sums
+  geometry.py      halfspace intersection (support values -> polytope vertices)
   directions.py    evenly spread directions on the circle / sphere (Fibonacci lattice)
+  simulate.py      random test bodies and the noisy measurement model
   metrics.py       Hausdorff and L2 distances via support functions
-examples/make_figures.py   regenerates every figure in this README
-tests/                     pytest suite
+  plotting.py      matplotlib helpers used by the examples
+examples/
+  figures.py       regenerates the README figures (~20 s)
+  convergence.py   the convergence benchmark (~1.5 min)
+  shapes.py        the example bodies
+tests/             pytest suite, one file per module
 ```
 
 ## References

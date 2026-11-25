@@ -13,34 +13,24 @@ directions, so the Hausdorff value is a (tight) lower bound.
 
 from __future__ import annotations
 
-from typing import Protocol
-
 import numpy as np
 
+from .bodies import ConvexBody
 from .directions import evenly_spread
 
 
-class HasSupport(Protocol):
-    def support(self, U: np.ndarray) -> np.ndarray: ...
-
-
-def _dim(body: HasSupport) -> int:
-    return int(body.dim)  # type: ignore[attr-defined]
-
-
-def _diffs(K: HasSupport, L: HasSupport, n_directions: int | None) -> np.ndarray:
-    d = _dim(K)
+def _support_gap(K: ConvexBody, L: ConvexBody, n_directions: int | None) -> np.ndarray:
     if n_directions is None:
-        n_directions = 20_000 if d == 2 else 50_000
-    U = evenly_spread(n_directions, d)
+        n_directions = 20_000 if K.dim == 2 else 50_000
+    U = evenly_spread(n_directions, K.dim)
     return K.support(U) - L.support(U)
 
 
-def hausdorff_distance(K: HasSupport, L: HasSupport, n_directions: int | None = None) -> float:
+def hausdorff_distance(K: ConvexBody, L: ConvexBody, n_directions: int | None = None) -> float:
     """Hausdorff distance between two convex bodies."""
-    return float(np.abs(_diffs(K, L, n_directions)).max())
+    return float(np.abs(_support_gap(K, L, n_directions)).max())
 
 
-def l2_distance(K: HasSupport, L: HasSupport, n_directions: int | None = None) -> float:
+def l2_distance(K: ConvexBody, L: ConvexBody, n_directions: int | None = None) -> float:
     """L2 distance between the support functions of two convex bodies."""
-    return float(np.sqrt(np.mean(_diffs(K, L, n_directions) ** 2)))
+    return float(np.sqrt(np.mean(_support_gap(K, L, n_directions) ** 2)))
