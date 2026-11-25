@@ -30,7 +30,7 @@ import cvxpy as cp
 import numpy as np
 import scipy.sparse as sp
 
-Loss = Literal["lsq", "lad"]
+Loss = Literal['lsq', 'lad']
 
 
 def fit_local_2d(U: np.ndarray, y: np.ndarray, loss: Loss, solver: str | None) -> np.ndarray:
@@ -45,7 +45,7 @@ def fit_local_2d(U: np.ndarray, y: np.ndarray, loss: Loss, solver: str | None) -
     if np.any(gaps < 1e-12):
         raise ValueError("directions must be distinct for the 'local' formulation")
     if np.any(gaps >= np.pi):
-        raise ValueError("directions must not lie in a closed half-plane")
+        raise ValueError('directions must not lie in a closed half-plane')
 
     a = gaps  # t_{i+1} - t_i
     b = np.roll(gaps, 1)  # t_i - t_{i-1}
@@ -96,12 +96,12 @@ def fit_pairwise(
         rows, cols = np.nonzero(active)
         _solve(cp.Problem(objective, [_pair_matrix(U, rows, cols) @ X <= 0]), solver)
         Xv = X.value.reshape(k, d)
-        hv = np.einsum("ij,ij->i", U, Xv)
+        hv = np.einsum('ij,ij->i', U, Xv)
         violated = ((U @ Xv.T) - hv[:, None] > tol) & ~active
         if not violated.any():
             return hv
         active |= violated
-    raise RuntimeError("constraint generation did not converge")
+    raise RuntimeError('constraint generation did not converge')
 
 
 def _pair_matrix(U: np.ndarray, rows: np.ndarray, cols: np.ndarray) -> sp.csr_matrix:
@@ -115,7 +115,7 @@ def _pair_matrix(U: np.ndarray, rows: np.ndarray, cols: np.ndarray) -> sp.csr_ma
 
 
 def _objective(y: np.ndarray, h: cp.Expression, loss: Loss) -> cp.Minimize:
-    if loss == "lsq":
+    if loss == 'lsq':
         return cp.Minimize(cp.sum_squares(y - h))
     return cp.Minimize(cp.norm1(y - h))
 
@@ -127,4 +127,4 @@ def _solve(problem: cp.Problem, solver: str | None) -> None:
         solver = cp.CLARABEL if cp.CLARABEL in cp.installed_solvers() else None
     problem.solve(solver=solver)
     if problem.status not in (cp.OPTIMAL, cp.OPTIMAL_INACCURATE):
-        raise RuntimeError(f"solver failed with status {problem.status!r}")
+        raise RuntimeError(f'solver failed with status {problem.status!r}')

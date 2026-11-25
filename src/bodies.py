@@ -53,7 +53,7 @@ class Polytope(ConvexBody):
     def __post_init__(self) -> None:
         pts = np.asarray(self.vertices, dtype=float)
         if pts.ndim != 2 or pts.shape[1] not in (2, 3):
-            raise ValueError("vertices must have shape (m, 2) or (m, 3)")
+            raise ValueError('vertices must have shape (m, 2) or (m, 3)')
         self.vertices = pts[ConvexHull(pts).vertices]
         self.hull = ConvexHull(self.vertices)
 

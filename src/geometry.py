@@ -26,14 +26,12 @@ def chebyshev_center(U: np.ndarray, h: np.ndarray) -> tuple[np.ndarray, float]:
         A_ub=np.column_stack([U, norms]),
         b_ub=h,
         bounds=[(None, None)] * d + [(0, None)],
-        method="highs",
+        method='highs',
     )
     if res.status == 3:
-        raise ValueError(
-            "halfspace intersection is unbounded; directions must not lie in a closed hemisphere"
-        )
+        raise ValueError('halfspace intersection is unbounded; directions must not lie in a closed hemisphere')
     if not res.success:
-        raise ValueError(f"could not find an interior point: {res.message}")
+        raise ValueError(f'could not find an interior point: {res.message}')
     return res.x[:d], float(res.x[-1])
 
 
@@ -47,5 +45,5 @@ def halfspace_vertices(U: np.ndarray, h: np.ndarray) -> np.ndarray:
     center, radius = chebyshev_center(U, h)
     scale = max(1.0, float(np.abs(h).max()))
     if radius <= 1e-9 * scale:
-        raise ValueError("halfspace intersection has (numerically) empty interior")
+        raise ValueError('halfspace intersection has (numerically) empty interior')
     return HalfspaceIntersection(np.column_stack([U, -h]), center).intersections

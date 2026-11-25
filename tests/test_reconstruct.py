@@ -8,8 +8,8 @@ import src as cr
 TOL = 1e-4
 
 
-@pytest.mark.parametrize("method", ["lsq", "lad"])
-@pytest.mark.parametrize("formulation", ["local", "pairwise"])
+@pytest.mark.parametrize('method', ['lsq', 'lad'])
+@pytest.mark.parametrize('formulation', ['local', 'pairwise'])
 def test_exact_measurements_are_reproduced_2d(method, formulation):
     """Noise-free data are consistent, so they must be returned unchanged."""
     K = cr.random_polygon(7, rng=3)
@@ -31,21 +31,21 @@ def test_cube_recovered_exactly_in_3d(cube):
     assert rec.polytope.volume == pytest.approx(8, rel=TOL)
 
 
-@pytest.mark.parametrize("method", ["lsq", "lad"])
+@pytest.mark.parametrize('method', ['lsq', 'lad'])
 def test_local_and_pairwise_formulations_agree(method):
     """The O(k) Rademacher-type constraints in 2D define the same feasible set."""
     rng = np.random.default_rng(0)
     U = cr.random_directions(60, 2, rng)
     y = cr.measure(cr.random_polygon(6, rng), U, sigma=0.2, rng=rng)
-    a = cr.reconstruct(U, y, method=method, formulation="local").support_values
-    b = cr.reconstruct(U, y, method=method, formulation="pairwise").support_values
-    if method == "lsq":  # strictly convex objective: unique optimum
+    a = cr.reconstruct(U, y, method=method, formulation='local').support_values
+    b = cr.reconstruct(U, y, method=method, formulation='pairwise').support_values
+    if method == 'lsq':  # strictly convex objective: unique optimum
         np.testing.assert_allclose(a, b, atol=TOL)
     else:  # the LP optimum need not be unique; compare objective values
         assert np.abs(y - a).sum() == pytest.approx(np.abs(y - b).sum(), abs=TOL)
 
 
-@pytest.mark.parametrize("dim", [2, 3])
+@pytest.mark.parametrize('dim', [2, 3])
 def test_output_is_consistent(dim):
     """The fitted values are exactly the support function of the output polytope."""
     U = cr.evenly_spread(80, dim)
@@ -78,18 +78,18 @@ def test_lad_is_robust_to_outliers():
     U = cr.circle_directions(200)
     y = cr.measure(K, U, sigma=0.01, rng=8)
     y[::10] += 1.5  # 10% gross outliers, all outward
-    lsq = cr.reconstruct(U, y, method="lsq")
-    lad = cr.reconstruct(U, y, method="lad")
+    lsq = cr.reconstruct(U, y, method='lsq')
+    lad = cr.reconstruct(U, y, method='lad')
     assert cr.hausdorff_distance(K, lad.polytope) < 0.5 * cr.hausdorff_distance(K, lsq.polytope)
 
 
 def test_input_validation():
     U = cr.circle_directions(10)
-    with pytest.raises(ValueError, match="measurements"):
+    with pytest.raises(ValueError, match='measurements'):
         cr.reconstruct(U, np.ones(9))
-    with pytest.raises(ValueError, match="unit"):
+    with pytest.raises(ValueError, match='unit'):
         cr.reconstruct(2 * U, np.ones(10))
-    with pytest.raises(ValueError, match="half-plane"):
+    with pytest.raises(ValueError, match='half-plane'):
         cr.reconstruct(cr.circle_directions(20)[:8], np.ones(8))
-    with pytest.raises(ValueError, match="method"):
-        cr.reconstruct(U, np.ones(10), method="foo")
+    with pytest.raises(ValueError, match='method'):
+        cr.reconstruct(U, np.ones(10), method='foo')

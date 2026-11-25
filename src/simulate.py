@@ -26,9 +26,7 @@ def random_polytope(n: int, rng: Seed = None) -> Polytope:
     return Polytope(v)
 
 
-def measure(
-    body: ConvexBody, directions: np.ndarray, sigma: float = 0.0, rng: Seed = None
-) -> np.ndarray:
+def measure(body: ConvexBody, directions: np.ndarray, sigma: float = 0.0, rng: Seed = None) -> np.ndarray:
     """Noisy support-function measurements ``y_i = h_K(u_i) + N(0, sigma^2)``."""
     rng = np.random.default_rng(rng)
     h = body.support(directions)

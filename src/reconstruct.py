@@ -16,7 +16,7 @@ import numpy as np
 from .bodies import Polytope
 from .solvers import Loss, fit_local_2d, fit_pairwise
 
-Formulation = Literal["auto", "pairwise", "local"]
+Formulation = Literal['auto', 'pairwise', 'local']
 
 
 @dataclass
@@ -42,8 +42,8 @@ class Reconstruction:
 def reconstruct(
     directions: np.ndarray,
     measurements: np.ndarray,
-    method: Loss = "lsq",
-    formulation: Formulation = "auto",
+    method: Loss = 'lsq',
+    formulation: Formulation = 'auto',
     solver: str | None = None,
 ) -> Reconstruction:
     """Estimate a convex body from noisy support-function measurements.
@@ -66,11 +66,11 @@ def reconstruct(
         more accurate here than cvxpy's default first-order QP solver.
     """
     U, y = _validate(directions, measurements, method)
-    if formulation == "auto":
-        formulation = "local" if U.shape[1] == 2 else "pairwise"
-    if formulation == "local":
+    if formulation == 'auto':
+        formulation = 'local' if U.shape[1] == 2 else 'pairwise'
+    if formulation == 'local':
         h = fit_local_2d(U, y, method, solver)
-    elif formulation == "pairwise":
+    elif formulation == 'pairwise':
         h = fit_pairwise(U, y, method, solver)
     else:
         raise ValueError("formulation must be 'auto', 'pairwise' or 'local'")
@@ -89,14 +89,14 @@ def _validate(directions, measurements, method) -> tuple[np.ndarray, np.ndarray]
     U = np.asarray(directions, dtype=float)
     y = np.asarray(measurements, dtype=float).ravel()
     if U.ndim != 2 or U.shape[1] not in (2, 3):
-        raise ValueError("directions must have shape (k, 2) or (k, 3)")
+        raise ValueError('directions must have shape (k, 2) or (k, 3)')
     k, d = U.shape
     if y.shape != (k,):
-        raise ValueError(f"expected {k} measurements, got {y.shape[0]}")
+        raise ValueError(f'expected {k} measurements, got {y.shape[0]}')
     if k < d + 1:
-        raise ValueError(f"need at least {d + 1} directions in {d}D")
+        raise ValueError(f'need at least {d + 1} directions in {d}D')
     if not np.allclose(np.linalg.norm(U, axis=1), 1.0, atol=1e-8):
-        raise ValueError("directions must be unit vectors")
-    if method not in ("lsq", "lad"):
+        raise ValueError('directions must be unit vectors')
+    if method not in ('lsq', 'lad'):
         raise ValueError("method must be 'lsq' or 'lad'")
     return U, y

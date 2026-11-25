@@ -14,14 +14,14 @@ def test_polytope_drops_interior_points():
     assert len(P.vertices) == 4
 
 
-@pytest.mark.parametrize("dim", [2, 3])
+@pytest.mark.parametrize('dim', [2, 3])
 def test_support_points_attain_support(dim):
     rng = np.random.default_rng(0)
     A = rng.standard_normal((dim, dim)) + 2 * np.eye(dim)
     P = cr.random_polygon(6, rng) if dim == 2 else cr.random_polytope(10, rng)
     for K in [cr.Ellipsoid(A, rng.standard_normal(dim)), P, P + cr.Ellipsoid(A, np.zeros(dim))]:
         U = cr.evenly_spread(50, dim)
-        np.testing.assert_allclose(np.einsum("ij,ij->i", K.support_points(U), U), K.support(U))
+        np.testing.assert_allclose(np.einsum('ij,ij->i', K.support_points(U), U), K.support(U))
 
 
 def test_bodies_share_the_interface(square):
@@ -43,7 +43,7 @@ def test_from_halfspaces_roundtrip(square):
 
 def test_from_halfspaces_unbounded():
     U = np.array([[1.0, 0.0], [0.0, 1.0], [np.sqrt(0.5), np.sqrt(0.5)]])
-    with pytest.raises(ValueError, match="unbounded"):
+    with pytest.raises(ValueError, match='unbounded'):
         cr.Polytope.from_halfspaces(U, np.ones(3))
 
 

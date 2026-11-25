@@ -8,7 +8,7 @@ import numpy as np
 def circle_directions(k: int, offset: float = 0.0) -> np.ndarray:
     """``k`` equally spaced unit vectors in the plane, shape ``(k, 2)``."""
     if k < 3:
-        raise ValueError("need at least 3 directions in 2D")
+        raise ValueError('need at least 3 directions in 2D')
     theta = offset + 2.0 * np.pi * np.arange(k) / k
     return np.column_stack([np.cos(theta), np.sin(theta)])
 
@@ -16,7 +16,7 @@ def circle_directions(k: int, offset: float = 0.0) -> np.ndarray:
 def sphere_directions(k: int) -> np.ndarray:
     """``k`` evenly spread unit vectors on the sphere (Fibonacci lattice), shape ``(k, 3)``."""
     if k < 4:
-        raise ValueError("need at least 4 directions in 3D")
+        raise ValueError('need at least 4 directions in 3D')
     i = np.arange(k) + 0.5
     z = 1.0 - 2.0 * i / k
     r = np.sqrt(1.0 - z**2)
@@ -37,4 +37,4 @@ def evenly_spread(k: int, dim: int) -> np.ndarray:
         return circle_directions(k)
     if dim == 3:
         return sphere_directions(k)
-    raise ValueError("dim must be 2 or 3")
+    raise ValueError('dim must be 2 or 3')
