@@ -1,20 +1,135 @@
-# Convex_Body_Reconstruction
-### A Python implementation of convex body reconstruction algorithms described in ["A New Algorithm for 3D Reconstruction from Support Functions"](https://www.researchgate.net/publication/23791824_A_New_Algorithm_for_3D_Reconstruction_from_Support_Functions) paper by Richard J. Gardner and Markus Kiderlen. 
-****
+# convex-recon
 
-#### This Repo includes
-* 2D implementation of a linear program version described in paper.
-* Convex body generation and visualization scrips
-* Utils for plotting and visualizing experiments
+**Reconstruct an unknown convex shape in 2D or 3D from noisy measurements of its support function.**
 
-*The results of a linear program version you can see in Reconstruction_from_support_function notebook*
-*implemented only for 2D case*
+<p align="center">
+  <img src="docs/img/reconstruction_2d.gif" width="420" alt="Reconstruction improving as the number of measurements grows">
+</p>
 
-**Reconstruction a input polygon from 50 measurements, with 0.01 noise level.**
+Imagine probing an object you can't see: for each direction `u` you learn (with noise) how far the
+object extends in that direction. That number is the **support function**
+`h_K(u) = max_{x in K} <x, u>`. Such measurements come from tactile and laser-stripe probes in
+robotics, from the extent of projections (shadows) in tomography, and from line-scan sensors. This
+library recovers the shape from them with a convex program, with convergence guarantees from the
+geometric-tomography literature.
 
-![recons](./imgs/approximation.png "Resonstruction")
+<p align="center">
+  <img src="docs/img/concept.png" width="360" alt="The support function of a convex body">
+</p>
 
+## Results
 
-**Reconstruction error(Hausdorf distance) versus number of measurements.**
+**2D:** least-squares reconstruction of a rounded heptagon from 10, 40 and 300 noisy measurements
+(σ = 0.05). Each orange segment is a measured supporting line.
 
-![recons](./imgs/dist_vs_n.png "Hausdorf distance vs k")
+![2D reconstructions](docs/img/reconstruction_2d.png)
+
+**3D:** the same estimator on the sphere of directions. A 600-direction problem (360,000
+pairwise constraints) solves in about 10 s on a laptop thanks to constraint generation (see below).
+
+![3D reconstructions](docs/img/reconstruction_3d.png)
+
+**Robustness:** replacing squared error with absolute error gives a linear program that ignores gross
+outliers.
+
+![LSQ vs LAD with outliers](docs/img/outliers.png)
+
+**Convergence:** as the number of measurements `k` grows, the error shrinks. Gardner, Kiderlen &
+Milanfar (2006) prove that the L2 error is `O(k^-2/5)` in 2D and `O(k^-1/3)` in 3D. These are
+worst-case upper bounds, and the measured slopes are steeper.
+
+![Convergence](docs/img/convergence.png)
+
+## Install
+
+```bash
+pip install git+https://github.com/garikdza/Convex_Body_Reconstruction
+```
+
+Requires Python ≥ 3.10, NumPy, SciPy and [cvxpy](https://www.cvxpy.org) (with the Clarabel solver).
+Add `matplotlib` for the figures.
+
+## Quick start
+
+```python
+import numpy as np
+import convex_recon as cr
+
+# an unknown body: a random polygon with rounded corners (Minkowski sum with a disk)
+K = cr.random_polygon(7, rng=0) + cr.Ellipsoid(0.1 * np.eye(2), np.zeros(2))
+
+U = cr.circle_directions(200)                # measurement directions (k, 2)
+y = cr.measure(K, U, sigma=0.05, rng=1)      # noisy support values
+
+rec = cr.reconstruct(U, y)                   # least squares; method="lad" for the robust LP
+print(rec.polytope.vertices)                 # the estimate is a polygon
+print(cr.hausdorff_distance(K, rec.polytope))
+```
+
+In 3D, use `cr.sphere_directions(k)` and a 3D body such as `cr.random_polytope(n)` or `cr.Ellipsoid(A, c)`.
+
+## How it works
+
+Given directions `u_1 … u_k` and measurements `y_i = h_K(u_i) + noise`, solve
+
+```
+minimise    Σ_i  loss(y_i − h_i)
+subject to  h_1 … h_k are consistent  (they are the support values of some convex body)
+```
+
+and return the polytope `P = { x : <x, u_i> ≤ h_i  for all i }`. This is *Algorithm
+NoisySupportLSQ* of Gardner, Kiderlen & Milanfar (2006), originally due to Prince & Willsky (1990).
+With `loss = square` it is a quadratic program. With `loss = |·|` (`method="lad"`) it is a linear
+program.
+
+The work is in expressing consistency as linear constraints. Two formulations are implemented:
+
+| | constraint | size | used for |
+|---|---|---|---|
+| **pairwise** (any dimension) | ∃ contact points `x_i` with `<x_i, u_i> = h_i` and `<x_j, u_i> ≤ h_i` ∀ i, j | `dk` variables, `k²` constraints | 3D |
+| **local** (2D) | with directions sorted by angle, `h_{i−1} sin(θ_{i+1}−θ_i) − h_i sin(θ_{i+1}−θ_{i−1}) + h_{i+1} sin(θ_i−θ_{i−1}) ≥ 0`: every edge touches the polygon cut out by its neighbours | `k` constraints | 2D, up to `k` = 20,000 in under a second |
+
+The `k²` pairwise constraints are what made 3D reconstruction expensive. Nearly all of them are
+inactive at the optimum, because only nearby directions compete for the same part of the boundary.
+So the solver uses **constraint generation**: it starts with each direction's nearest neighbours,
+solves, adds every violated constraint and repeats. A relaxed solution that satisfies all
+constraints is optimal for the full problem, so the result is exact. Together with sparse constraint
+matrices, this cut the k = 400 solve from 55 s (dense, all constraints) to 1.2 s.
+
+The tests check that both 2D formulations give the same optimum and that noise-free data are
+reproduced exactly. They also check that a polytope is recovered exactly when its facet normals
+are among the measurement directions, that the least-squares estimator is a projection, and that the
+LP variant shrugs off outliers.
+
+## Project layout
+
+```
+src/convex_recon/
+  reconstruct.py   the estimators (QP / LP, local and pairwise formulations)
+  bodies.py        polytopes, ellipsoids, Minkowski sums, halfspace intersection
+  directions.py    evenly spread directions on the circle / sphere (Fibonacci lattice)
+  metrics.py       Hausdorff and L2 distances via support functions
+examples/make_figures.py   regenerates every figure in this README
+tests/                     pytest suite
+```
+
+```bash
+uv sync && uv run pytest              # run the tests
+uv run python examples/make_figures.py  # rebuild docs/img/ (~2 min, mostly the benchmark)
+```
+
+## References
+
+- R. J. Gardner, M. Kiderlen, P. Milanfar. *Convergence of algorithms for reconstructing convex
+  bodies and directional measures.* Annals of Statistics 34(3), 2006.
+  [arXiv:math/0608011](https://arxiv.org/abs/math/0608011)
+- R. J. Gardner, M. Kiderlen. *A new algorithm for 3D reconstruction from support functions.*
+  IEEE TPAMI 31(3), 2009.
+- J. L. Prince, A. S. Willsky. *Reconstructing convex sets from support line measurements.*
+  IEEE TPAMI 12(4), 1990.
+- A. S. Lele, S. R. Kulkarni, A. S. Willsky. *Convex-polygon estimation from support-line
+  measurements and applications to target reconstruction from laser-radar data.* JOSA A 9(10), 1992.
+
+## License
+
+MIT
