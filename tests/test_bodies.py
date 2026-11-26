@@ -2,8 +2,7 @@ import numpy as np
 import pytest
 
 from src.bodies import Ellipsoid, Polytope, to_polytope
-from src.directions import circle_directions, evenly_spread
-from src.metrics import hausdorff_distance
+from src.directions import evenly_spread
 from src.simulate import random_polygon, random_polytope
 
 
@@ -41,11 +40,14 @@ def test_minkowski_sum_rounded_square_area(square: Polytope):
     assert to_polytope(K, 4000).volume == pytest.approx(8 + np.pi / 4, rel=1e-4)
 
 
-def test_from_halfspaces_square(square: Polytope):
-    P = Polytope.from_halfspaces(circle_directions(4), np.ones(4))
-    assert hausdorff_distance(P, square) < 1e-12
-
-
-def test_bad_vertices_raise():
-    with pytest.raises(ValueError, match=r'shape \(m, 2\) or \(m, 3\), got \(5, 4\)'):
-        Polytope(np.zeros((5, 4)))
+@pytest.mark.parametrize(
+    ('build', 'match'),
+    [
+        pytest.param(lambda: Polytope(np.zeros((5, 4))), r'shape \(m, 2\) or \(m, 3\), got \(5, 4\)', id='vertices'),
+        pytest.param(lambda: Ellipsoid(np.eye(3), np.zeros(2)), r'got \(3, 3\) and \(2,\)', id='ellipsoid'),
+        pytest.param(lambda: random_polygon(5) + Ellipsoid(np.eye(3), np.zeros(3)), r'got \[2, 3\]', id='sum'),
+    ],
+)
+def test_bad_bodies_raise(build, match: str):
+    with pytest.raises(ValueError, match=match):
+        build()

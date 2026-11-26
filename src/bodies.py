@@ -125,6 +125,9 @@ class Ellipsoid(ConvexBody):
     def __post_init__(self) -> None:
         self.A = np.asarray(self.A, dtype=float)
         self.center = np.asarray(self.center, dtype=float)
+        d = self.center.size
+        if self.center.shape != (d,) or self.A.shape != (d, d):
+            raise ValueError(f'A must be (d, d) for a center of shape (d,), got {self.A.shape} and {self.center.shape}')
 
     @property
     def dim(self) -> int:
@@ -151,6 +154,11 @@ class MinkowskiSum(ConvexBody):
     """
 
     parts: tuple[ConvexBody, ...]
+
+    def __post_init__(self) -> None:
+        dims = [K.dim for K in self.parts]
+        if len(set(dims)) != 1:
+            raise ValueError(f'summands must have the same dimension, got {dims}')
 
     @property
     def dim(self) -> int:

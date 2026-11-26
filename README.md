@@ -45,7 +45,7 @@ of a convex body:
   ⟨x<sub>i</sub>, u<sub>i</sub>⟩ = h<sub>i</sub> and ⟨x<sub>j</sub>, u<sub>i</sub>⟩ ≤ h<sub>i</sub> for all i, j. Only
   the constraints between nearby directions are active at the optimum, so they are added by constraint generation:
   start from each direction's nearest neighbours, solve, add the violated constraints and repeat. The result is
-  exact, and k = 600 in 3D solves in about 10 s.
+  exact, and k = 600 in 3D solves in under 2 s.
 
 **Bodies**: `Polytope`, `Ellipsoid` and their Minkowski sums (`+`, which adds the support functions), compared with
 `hausdorff_distance` and `l2_distance`.
@@ -112,7 +112,7 @@ dashed line has the slope of the proven bound on the L2 error, k<sup>−2/5</sup
 uv sync --extra examples
 uv run --extra examples python examples/reconstruction_2d.py   # also support_function.py, outliers.py, animation_2d.py
 uv run --extra examples python examples/reconstruction_3d.py   # saves the fit; --recompute fits again
-uv run --extra examples python examples/convergence.py         # about 1.5 min on the first run
+uv run --extra examples python examples/convergence.py         # about 30 s on the first run
 ```
 
 ## References

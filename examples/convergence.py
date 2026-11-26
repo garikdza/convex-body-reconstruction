@@ -7,6 +7,7 @@ The errors are saved to ``figures/convergence.npz`` and later runs plot from the
 Run with ``uv run --extra examples python examples/convergence.py``.
 """
 
+from fractions import Fraction
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -18,11 +19,12 @@ from src import evenly_spread, hausdorff_distance, l2_distance, measure, reconst
 from style import HAUSDORFF_ERROR, INK, L2_ERROR, MINIMAL
 
 SIGMA = 0.05
-# per dimension: the k values, the draws per k, and the proven L2 rate as an exponent and as a label
+# per dimension: the k values, the draws per k, and the proven L2 rate as the exponent of k^-rate
 SETUPS = {
-    2: ((8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096), 20, 2 / 5, '2/5'),
-    3: ((16, 32, 64, 128, 256, 512), 6, 1 / 3, '1/3'),
+    2: ((8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096), 20, Fraction(2, 5)),
+    3: ((16, 32, 64, 128, 256, 512), 6, Fraction(1, 3)),
 }
+ERRORS = [('l2', 'L2', L2_ERROR), ('hausdorff', 'Hausdorff', HAUSDORFF_ERROR)]
 # the fitted slopes skip the smallest k values, before the error settles into its rate
 FIT_FROM = 2
 FIGURES = Path(__file__).parent / 'figures'
@@ -33,7 +35,7 @@ def compute() -> dict[str, np.ndarray]:
     """L2 and Hausdorff errors of every draw, shape ``(len(ks), draws)`` per dimension."""
     bodies = {2: rounded_heptagon(), 3: rounded_polytope()}
     results = {}
-    for dim, (ks, draws, _, _) in SETUPS.items():
+    for dim, (ks, draws, _) in SETUPS.items():
         K = bodies[dim]
         l2, hausdorff = np.zeros((len(ks), draws)), np.zeros((len(ks), draws))
         for a, k in enumerate(ks):
@@ -56,21 +58,22 @@ def plot(results: dict[str, np.ndarray]) -> None:
     """Draw the median errors with their interquartile bands on log axes, one panel per dimension."""
     with plt.rc_context(MINIMAL):
         fig, axes = plt.subplots(1, 2, figsize=(11, 4.2))
-        for ax, (dim, (_, draws, rate, rate_label)) in zip(axes, SETUPS.items(), strict=True):
+        for ax, (dim, (_, _, rate)) in zip(axes, SETUPS.items(), strict=True):
             ks = results[f'ks_{dim}d']
-            for name, colour in [('l2', L2_ERROR), ('hausdorff', HAUSDORFF_ERROR)]:
+            draws = results[f'l2_{dim}d'].shape[1]
+            for name, title, colour in ERRORS:
                 errors = results[f'{name}_{dim}d']
                 median = np.median(errors, axis=1)
                 q1, q3 = np.percentile(errors, [25, 75], axis=1)
                 slope = np.polyfit(np.log(ks[FIT_FROM:]), np.log(median[FIT_FROM:]), 1)[0]
                 print(f'{dim}D {name}: fitted slope {slope:.2f}')
-                label = f'{"L2" if name == "l2" else "Hausdorff"} error (slope {slope:.2f})'
+                label = f'{title} error (slope {slope:.2f})'
                 ax.fill_between(ks, q1, q3, color=colour, alpha=0.12, linewidth=0)
                 ax.plot(ks, median, color=colour, label=label)
                 ax.scatter(ks, median, s=24, color=colour, zorder=3)
             # the proven rate is an upper bound, so its line is drawn above the L2 errors
-            reference = 1.6 * np.median(results[f'l2_{dim}d'], axis=1)[1] * (ks / ks[1]) ** -rate
-            ax.plot(ks, reference, '--', color=INK, linewidth=1.2, label=rf'proven L2 rate $k^{{-{rate_label}}}$')
+            reference = 1.6 * np.median(results[f'l2_{dim}d'], axis=1)[1] * (ks / ks[1]) ** -float(rate)
+            ax.plot(ks, reference, '--', color=INK, linewidth=1.2, label=rf'proven L2 rate $k^{{-{rate}}}$')
             ax.set_xscale('log')
             ax.set_yscale('log')
             ax.set_xticks(ks, [str(k) for k in ks])

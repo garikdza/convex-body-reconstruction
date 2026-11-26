@@ -115,7 +115,7 @@ def fit_pairwise(
         rows, cols = np.nonzero(active)
         _solve(cp.Problem(objective, [_pair_matrix(U, rows, cols) @ X <= 0]), solver)
         Xv = X.value.reshape(k, d)
-        hv = np.einsum('ij,ij->i', U, Xv)
+        hv = h.value
         violated = ((U @ Xv.T) - hv[:, None] > tol) & ~active
         if not violated.any():
             return hv
@@ -136,13 +136,20 @@ def _pair_matrix(U: np.ndarray, rows: np.ndarray, cols: np.ndarray) -> sp.csr_ma
 def _objective(y: np.ndarray, h: cp.Expression, loss: Loss) -> cp.Minimize:
     if loss == 'lsq':
         return cp.Minimize(cp.sum_squares(y - h))
-    return cp.Minimize(cp.norm1(y - h))
+    if loss == 'lad':
+        return cp.Minimize(cp.norm1(y - h))
+    raise ValueError(f"loss must be 'lsq' or 'lad', got {loss!r}")
 
 
 def _solve(problem: cp.Problem, solver: str | None) -> None:
     if solver is None:
         # cvxpy's default QP solver, OSQP, is first-order and stalls on these problems; Clarabel does not
         solver = cp.CLARABEL
-    problem.solve(solver=solver)
+    if solver == cp.CLARABEL:
+        # Clarabel's default factoriser, faer, runs on every core and its threads slow each other down on these
+        # problems; the single-threaded QDLDL solves a 3D fit with k = 600 about 6 times faster
+        problem.solve(solver=solver, direct_solve_method='qdldl')
+    else:
+        problem.solve(solver=solver)
     if problem.status not in (cp.OPTIMAL, cp.OPTIMAL_INACCURATE):
         raise RuntimeError(f'solver {solver} failed with status {problem.status!r}')

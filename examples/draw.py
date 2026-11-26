@@ -11,6 +11,10 @@ from style import INK_SOFT, MEASUREMENT, TRUTH
 # the 3D view and the light direction relative to it
 ELEV, AZIM = 24, -58
 LIGHT_ELEV, LIGHT_AZIM = ELEV + 40, AZIM - 50
+# half the side of the cube the 3D axes show
+LIM_3D = 0.82
+# half the length of each drawn piece of a supporting line
+HALF_LENGTH = 0.22
 
 
 def outline(body: ConvexBody) -> np.ndarray:
@@ -49,7 +53,6 @@ def draw_measurements(
     color: str = MEASUREMENT,
     alpha: float | None = None,
     label: str | None = 'measurement',
-    half_length: float = 0.22,
 ) -> None:
     """
     Measurements as short pieces of their supporting lines ``<x, u_i> = y_i``, each marked at ``y_i u_i``.
@@ -68,15 +71,13 @@ def draw_measurements(
         opacity of the lines; ``None`` fades them as ``k`` grows
     label : str | None
         legend label
-    half_length : float
-        half the length of each line piece
     """
     if alpha is None:
         alpha = float(np.clip(3 / np.sqrt(len(y)), 0.15, 0.9))
     p = U * y[:, None]
     t = np.column_stack([-U[:, 1], U[:, 0]])
     # one polyline with NaN breaks draws all the pieces in one call
-    segments = np.stack([p - half_length * t, p + half_length * t, np.full_like(p, np.nan)], axis=1).reshape(-1, 2)
+    segments = np.stack([p - HALF_LENGTH * t, p + HALF_LENGTH * t, np.full_like(p, np.nan)], axis=1).reshape(-1, 2)
     ax.plot(segments[:, 0], segments[:, 1], color=color, linewidth=1.0, alpha=alpha, label=label, zorder=1)
     ax.scatter(p[:, 0], p[:, 1], s=6 if len(y) > 100 else 12, color=color, linewidth=0, zorder=5)
 
@@ -95,7 +96,7 @@ def _rgb(hex_colour: str) -> np.ndarray:
     return np.array([int(hex_colour[i : i + 2], 16) for i in (1, 3, 5)]) / 255
 
 
-def draw_polytope_3d(ax, P: Polytope, color: str, edge_color: str | None = None, lim: float = 0.82) -> None:
+def draw_polytope_3d(ax, P: Polytope, color: str, edge_color: str | None = None) -> None:
     """
     A 3D polytope with flat shading and, optionally, its facet edges, seen from ``ELEV`` and ``AZIM``.
 
@@ -112,8 +113,6 @@ def draw_polytope_3d(ax, P: Polytope, color: str, edge_color: str | None = None,
         base colour as ``'#rrggbb'``, darkened on faces turned away from the light
     edge_color : str | None
         colour of the facet edges; ``None`` draws none
-    lim : float
-        half the side of the cube shown
     """
     hull = P.hull
     normals = hull.equations[:, :3]  # outward unit normals
@@ -135,9 +134,9 @@ def draw_polytope_3d(ax, P: Polytope, color: str, edge_color: str | None = None,
                     points += [*P.vertices[np.delete(hull.simplices[t], j)], np.full(3, np.nan)]
         ax.plot(*np.array(points).T, color=edge_color, linewidth=0.6, alpha=0.7)
 
-    ax.set_xlim(-lim, lim)
-    ax.set_ylim(-lim, lim)
-    ax.set_zlim(-lim, lim)
+    ax.set_xlim(-LIM_3D, LIM_3D)
+    ax.set_ylim(-LIM_3D, LIM_3D)
+    ax.set_zlim(-LIM_3D, LIM_3D)
     ax.set_box_aspect((1, 1, 1))
     ax.view_init(elev=ELEV, azim=AZIM)
     ax.set_axis_off()

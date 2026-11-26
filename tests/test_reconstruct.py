@@ -71,6 +71,8 @@ U10 = circle_directions(10)
         pytest.param(2 * U10, np.ones(10), {}, 'unit vectors', id='not-unit'),
         pytest.param(U10, np.ones(10), {'method': 'l2'}, "method must be 'lsq' or 'lad'", id='method'),
         pytest.param(U10, np.ones(10), {'formulation': 'dense'}, 'formulation must be', id='formulation'),
+        # all ten directions have z >= 0, so nothing bounds the estimate from below
+        pytest.param(np.abs(sphere_directions(10)), np.ones(10), {}, 'closed hemisphere', id='hemisphere'),
     ],
 )
 def test_bad_input_raises(directions: np.ndarray, measurements: np.ndarray, kwargs: dict, match: str):

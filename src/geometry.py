@@ -23,7 +23,7 @@ def chebyshev_center(U: np.ndarray, h: np.ndarray) -> tuple[np.ndarray, float]:
     radius : float
         radius of the ball, 0 when the polyhedron has empty interior
     """
-    k, d = U.shape
+    d = U.shape[1]
     norms = np.linalg.norm(U, axis=1)
     cost = np.zeros(d + 1)
     cost[-1] = -1.0  # maximise the radius

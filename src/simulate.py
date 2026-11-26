@@ -1,6 +1,7 @@
 import numpy as np
 
 from src.bodies import ConvexBody, Polytope
+from src.directions import random_directions
 
 
 def random_polygon(n: int, rng: np.random.Generator | int | None = None) -> Polytope:
@@ -43,8 +44,7 @@ def random_polytope(n: int, rng: np.random.Generator | int | None = None) -> Pol
         the polytope
     """
     rng = np.random.default_rng(rng)
-    v = rng.standard_normal((n, 3))
-    v /= np.linalg.norm(v, axis=1, keepdims=True)
+    v = random_directions(n, 3, rng)
     v *= rng.uniform(0.7, 1.0, (n, 1)) * np.array([1.0, 0.8, 0.6])
     return Polytope(v)
 

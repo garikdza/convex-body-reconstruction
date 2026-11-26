@@ -6,7 +6,7 @@ that file, and ``--recompute`` computes again.
 """
 
 import argparse
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Mapping
 from pathlib import Path
 
 import numpy as np
@@ -67,8 +67,8 @@ def load_or_compute(path: Path, compute: Callable[[], dict[str, np.ndarray]], re
     return load_results(path)
 
 
-def parse_args(description: str, argv: Sequence[str] | None = None) -> argparse.Namespace:
+def parse_args(description: str) -> argparse.Namespace:
     """Parse the command line of an example script that saves its results: only ``--recompute``."""
     parser = argparse.ArgumentParser(description=description, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--recompute', action='store_true', help='compute again and overwrite the saved results')
-    return parser.parse_args(argv)
+    return parser.parse_args()

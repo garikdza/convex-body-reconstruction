@@ -4,6 +4,7 @@ from typing import Literal
 import numpy as np
 
 from src.bodies import Polytope
+from src.geometry import chebyshev_center
 from src.solvers import Loss, fit_local_2d, fit_pairwise
 
 Formulation = Literal['auto', 'pairwise', 'local']
@@ -24,18 +25,12 @@ class Reconstruction:
         fitted consistent support values ``h``, shape ``(k,)``
     polytope : Polytope
         the estimate ``{x : <x, u_i> <= h_i for all i}``, whose support function at ``u_i`` is ``h_i``
-    method : {'lsq', 'lad'}
-        the loss that was minimised
-    formulation : {'local', 'pairwise'}
-        how consistency was imposed
     """
 
     directions: np.ndarray
     measurements: np.ndarray
     support_values: np.ndarray
     polytope: Polytope
-    method: Loss
-    formulation: Formulation
 
     @property
     def residuals(self) -> np.ndarray:
@@ -84,7 +79,7 @@ def reconstruct(
         h = fit_pairwise(U, y, method, solver)
     else:
         raise ValueError(f"formulation must be 'auto', 'local' or 'pairwise', got {formulation!r}")
-    return Reconstruction(U, y, h, Polytope.from_halfspaces(U, h), method, formulation)
+    return Reconstruction(U, y, h, Polytope.from_halfspaces(U, h))
 
 
 def _validate(directions: np.ndarray, measurements: np.ndarray, method: str) -> tuple[np.ndarray, np.ndarray]:
@@ -101,4 +96,7 @@ def _validate(directions: np.ndarray, measurements: np.ndarray, method: str) -> 
         raise ValueError('directions must be unit vectors')
     if method not in ('lsq', 'lad'):
         raise ValueError(f"method must be 'lsq' or 'lad', got {method!r}")
+    # the directions lie in a closed hemisphere iff {x : <x, u_i> <= 1} is unbounded, which chebyshev_center reports;
+    # checking before the fit spares a solve whose estimate would be unbounded
+    chebyshev_center(U, np.ones(k))
     return U, y

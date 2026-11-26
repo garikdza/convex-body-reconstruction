@@ -73,3 +73,9 @@ def test_pairwise_gives_up_after_max_rounds():
 def test_local_bad_directions_raise(U: np.ndarray, match: str):
     with pytest.raises(ValueError, match=match):
         fit_local_2d(U, np.ones(len(U)))
+
+
+@pytest.mark.parametrize('fit', FITS)
+def test_unknown_loss_raises(fit):
+    with pytest.raises(ValueError, match="loss must be 'lsq' or 'lad', got 'l2'"):
+        fit(TRIANGLE, np.ones(3), 'l2')
