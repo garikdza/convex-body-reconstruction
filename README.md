@@ -77,14 +77,6 @@ In 3D, take the directions from `sphere_directions(k)` and a body such as `rando
 
 ## Examples
 
-[`examples/`](examples) has one script per figure.
-
-<p align="center">
-  <img src="examples/figures/reconstruction_2d.png" width="900"
-       alt="Reconstructions of a rounded heptagon from 10, 40 and 300 measurements">
-</p>
-<p align="center"><sub>Least-squares reconstructions from 10, 40 and 300 measurements with noise σ = 0.05.</sub></p>
-
 <p align="center">
   <img src="examples/figures/reconstruction_3d.png" width="900"
        alt="A rounded 3D polytope beside its reconstructions from 60 and 600 measurements">
@@ -92,26 +84,19 @@ In 3D, take the directions from `sphere_directions(k)` and a body such as `rando
 <p align="center"><sub>A rounded random polytope and its least-squares reconstructions from 60 and 600 directions with
 noise σ = 0.03.</sub></p>
 
-<p align="center">
-  <img src="examples/figures/noise.png" width="840"
-       alt="L2 and Hausdorff errors of least squares and least absolute deviations growing with the noise level on log axes">
-</p>
-<p align="center"><sub>Error against the noise level σ with k = 400 directions. With Gaussian noise least squares is
-slightly more accurate.</sub></p>
+[`examples/`](examples) has one script per figure; the figures are in [`examples/figures/`](examples/figures):
 
-<p align="center">
-  <img src="examples/figures/outliers.png" width="480"
-       alt="Least squares pulled outward by scattered outliers while least absolute deviations stays on the true body">
-</p>
-<p align="center"><sub>With outliers least absolute deviations is the robust choice: least squares is pulled toward
-them.</sub></p>
+- [`reconstruction_2d.py`](examples/reconstruction_2d.py): reconstructions from 10, 40 and 300 measurements.
+- [`noise.py`](examples/noise.py): the error of least squares and least absolute deviations against the noise level.
+- [`outliers.py`](examples/outliers.py): least squares pulled by outliers, least absolute deviations unaffected.
+- [`convergence.py`](examples/convergence.py): the error against k in 2D and 3D beside the proven L2 rate.
+- [`support_function.py`](examples/support_function.py) and [`animation_2d.py`](examples/animation_2d.py): the
+  figures above.
 
 ```bash
 uv sync --extra examples
-uv run --extra examples python examples/reconstruction_2d.py   # also support_function.py, outliers.py, animation_2d.py
-uv run --extra examples python examples/reconstruction_3d.py   # saves the fit; --recompute fits again
-uv run --extra examples python examples/noise.py               # about 10 s on the first run
-uv run --extra examples python examples/convergence.py         # error against k in 2D and 3D, about 30 s
+uv run --extra examples python examples/reconstruction_3d.py   # any script; the slow ones save their results,
+                                                               # --recompute computes them again
 ```
 
 ## References

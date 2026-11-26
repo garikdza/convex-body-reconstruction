@@ -25,14 +25,8 @@ htmlcov/
 .idea/
 .vscode/
 
-# example figures and saved results: only the figures the README shows are tracked
-examples/figures/*
-!examples/figures/support_function.png
-!examples/figures/reconstruction_2d.png
-!examples/figures/animation_2d.gif
-!examples/figures/reconstruction_3d.png
-!examples/figures/outliers.png
-!examples/figures/noise.png
+# saved results of the example scripts; the figures themselves are tracked
+examples/figures/*.npz
 
 # AGENTS.md is generated locally from CLAUDE.md and not tracked
 AGENTS.md
