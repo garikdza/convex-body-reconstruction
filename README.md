@@ -84,12 +84,10 @@ In 3D, take the directions from `sphere_directions(k)` and a body such as `rando
 <p align="center"><sub>A rounded random polytope and its least-squares reconstructions from 60 and 600 directions with
 noise σ = 0.03.</sub></p>
 
-[`examples/`](examples) has one script per figure; the figures are in [`examples/figures/`](examples/figures):
+More in [`examples/`](examples), with the figures in [`examples/figures/`](examples/figures):
 
 - [`noise.py`](examples/noise.py): the error of least squares and least absolute deviations against the noise level.
 - [`outliers.py`](examples/outliers.py): least squares pulled by outliers, least absolute deviations unaffected.
-- [`support_function.py`](examples/support_function.py) and [`animation_2d.py`](examples/animation_2d.py): the
-  figures above.
 
 ```bash
 uv sync --extra examples
