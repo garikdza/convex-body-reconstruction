@@ -1,5 +1,10 @@
 """
-The 2D reconstruction as the number of measurements grows from 5 to 400 (``figures/animation_2d.gif``).
+The 2D reconstruction as the number of measurements grows from 5 to 400, beside its error against k
+(``figures/animation_2d.gif``).
+
+The left panel shows the measurements, the estimate and the true body; the right panel traces the L2 and Hausdorff
+errors of each estimate on log axes, beside the proven L2 rate k^-2/5. At the end the animation pauses, fades the
+measurements out to leave the true body and the final estimate, and holds that view before it loops.
 
 Run with ``uv run --extra examples python examples/animation_2d.py``.
 """
@@ -12,40 +17,74 @@ from matplotlib.animation import FuncAnimation, PillowWriter
 
 from draw import draw_body, draw_estimate, draw_measurements, setup_2d
 from shapes import rounded_heptagon
-from src import circle_directions, hausdorff_distance, measure, reconstruct
-from style import LSQ, MINIMAL
+from src import circle_directions, hausdorff_distance, l2_distance, measure, reconstruct
+from style import HAUSDORFF_ERROR, INK, L2_ERROR, LSQ, MINIMAL
 
 KS = np.unique(np.round(np.geomspace(5, 400, 48)).astype(int))
 SIGMA = 0.05
-# frames the last reconstruction is held for before the loop restarts
-HOLD = 12
+FPS = 10
+# at the end: seconds paused on the last frame, seconds to fade the measurements out, seconds holding the clean view
+PAUSE, FADE, HOLD = 2.0, 1.5, 2.5
 FIGURES = Path(__file__).parent / 'figures'
 
 
 def main() -> None:
     K = rounded_heptagon()
-    frames = []
+    fits = []
     for k in KS:
         U = circle_directions(int(k), offset=0.3)
         y = measure(K, U, SIGMA, rng=int(k))
         P = reconstruct(U, y).polytope
-        frames.append((U, y, P, hausdorff_distance(K, P)))
-    frames += [frames[-1]] * HOLD
+        fits.append((U, y, P))
+    l2 = np.array([l2_distance(K, P) for _, _, P in fits])
+    hausdorff = np.array([hausdorff_distance(K, P) for _, _, P in fits])
+
+    # each frame is (index of the fit, opacity of the measurements)
+    last = len(KS) - 1
+    frames = [(i, 1.0) for i in range(len(KS))]
+    frames += [(last, 1.0)] * round(PAUSE * FPS)
+    frames += [(last, f) for f in np.linspace(1, 0, round(FADE * FPS) + 1)[1:]]
+    frames += [(last, 0.0)] * round(HOLD * FPS)
+
+    # the proven rate k^-2/5 is an upper bound, so its line is the lowest one above the L2 errors from k = 10 on,
+    # once the error has settled into its rate
+    reference = KS**-0.4 * np.max((l2 * KS**0.4)[KS >= 10])
 
     with plt.rc_context(MINIMAL):
-        fig, ax = plt.subplots(figsize=(5, 5.2), dpi=90)
+        fig, (left, right) = plt.subplots(1, 2, figsize=(10, 5), gridspec_kw={'width_ratios': [1, 1.05]})
+        # fixed margins: the axes are redrawn every frame, so a layout computed once would not fit later frames
+        fig.subplots_adjust(left=0.02, right=0.98, top=0.9, bottom=0.12, wspace=0.18)
 
-        def draw(i: int) -> None:
-            U, y, P, error = frames[i]
-            ax.clear()
-            setup_2d(ax)
-            draw_measurements(ax, U, y)
-            draw_estimate(ax, P, LSQ)
-            draw_body(ax, K)
-            ax.set_title(f'k = {len(y)}    Hausdorff error {error:.3f}')
+        def draw(frame: tuple[int, float]) -> None:
+            i, fade = frame
+            U, y, P = fits[i]
+            left.clear()
+            setup_2d(left)
+            if fade > 0:
+                draw_measurements(left, U, y, fade=fade)
+            draw_estimate(left, P, LSQ)
+            draw_body(left, K)
+            left.set_title(f'k = {len(y)} measurements')
+
+            right.clear()
+            right.plot(KS, reference, '--', color=INK, linewidth=1.2, label=r'proven L2 rate $k^{-2/5}$')
+            for errors, name, colour in [(l2, 'L2', L2_ERROR), (hausdorff, 'Hausdorff', HAUSDORFF_ERROR)]:
+                right.plot(KS[: i + 1], errors[: i + 1], color=colour, label=f'{name} error {errors[i]:.3f}')
+                right.scatter(KS[i], errors[i], s=30, color=colour, zorder=3)
+            right.set_xscale('log')
+            right.set_yscale('log')
+            right.set_xlim(KS[0] * 0.9, KS[-1] * 1.1)
+            right.set_ylim(min(l2.min(), hausdorff.min()) * 0.7, max(reference.max(), hausdorff.max()) * 1.3)
+            ticks = [5, 10, 20, 50, 100, 200, 400]
+            right.set_xticks(ticks, [str(t) for t in ticks])
+            right.minorticks_off()
+            right.set_xlabel('number of measurements k')
+            right.set_ylabel(f'error, σ = {SIGMA}')
+            right.set_title('error against k')
+            right.legend(loc='lower left')
 
         path = FIGURES / 'animation_2d.gif'
-        FuncAnimation(fig, draw, frames=len(frames)).save(path, writer=PillowWriter(fps=8))
+        FuncAnimation(fig, draw, frames=frames).save(path, writer=PillowWriter(fps=FPS), dpi=90)
         plt.close(fig)
     print(f'wrote {path}')
 

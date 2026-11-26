@@ -53,6 +53,7 @@ def draw_measurements(
     color: str = MEASUREMENT,
     alpha: float | None = None,
     label: str | None = 'measurement',
+    fade: float = 1.0,
 ) -> None:
     """
     Measurements as short pieces of their supporting lines ``<x, u_i> = y_i``, each marked at ``y_i u_i``.
@@ -71,15 +72,18 @@ def draw_measurements(
         opacity of the lines; ``None`` fades them as ``k`` grows
     label : str | None
         legend label
+    fade : float
+        factor in [0, 1] applied to the opacity of both the lines and the points, to fade them out
     """
     if alpha is None:
         alpha = float(np.clip(3 / np.sqrt(len(y)), 0.15, 0.9))
+    alpha *= fade
     p = U * y[:, None]
     t = np.column_stack([-U[:, 1], U[:, 0]])
     # one polyline with NaN breaks draws all the pieces in one call
     segments = np.stack([p - HALF_LENGTH * t, p + HALF_LENGTH * t, np.full_like(p, np.nan)], axis=1).reshape(-1, 2)
     ax.plot(segments[:, 0], segments[:, 1], color=color, linewidth=1.0, alpha=alpha, label=label, zorder=1)
-    ax.scatter(p[:, 0], p[:, 1], s=6 if len(y) > 100 else 12, color=color, linewidth=0, zorder=5)
+    ax.scatter(p[:, 0], p[:, 1], s=6 if len(y) > 100 else 12, color=color, alpha=fade, linewidth=0, zorder=5)
 
 
 def caption(ax, text: str) -> None:
