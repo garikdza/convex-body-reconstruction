@@ -32,7 +32,7 @@ examples/figures/*
 !examples/figures/animation_2d.gif
 !examples/figures/reconstruction_3d.png
 !examples/figures/outliers.png
-!examples/figures/convergence.png
+!examples/figures/noise.png
 
 # AGENTS.md is generated locally from CLAUDE.md and not tracked
 AGENTS.md

@@ -31,18 +31,19 @@ def setup_2d(ax, lim: float = 1.3) -> None:
     ax.set_axis_off()
 
 
-def draw_body(ax, body: ConvexBody, label: str | None = 'true body', fill: float = 0.0) -> None:
-    """The outline of a 2D body, filled with opacity ``fill``."""
+def draw_body(ax, body: ConvexBody, label: str | None = 'true body', fill: float = 0.0, on_top: bool = True) -> None:
+    """The outline of a 2D body, filled with opacity ``fill``, drawn over the estimates unless ``on_top`` is false."""
     b = outline(body)
     if fill:
         ax.fill(b[:, 0], b[:, 1], color=TRUTH, alpha=fill, linewidth=0)
-    ax.plot(b[:, 0], b[:, 1], color=TRUTH, linewidth=1.8, label=label, zorder=4)
+    ax.plot(b[:, 0], b[:, 1], color=TRUTH, linewidth=1.8, label=label, zorder=4 if on_top else 2.5)
 
 
-def draw_estimate(ax, P: Polytope, color: str, label: str | None = 'reconstruction') -> None:
-    """A reconstructed polygon, lightly filled."""
+def draw_estimate(ax, P: Polytope, color: str, label: str | None = 'reconstruction', fill: float = 0.15) -> None:
+    """A reconstructed polygon, filled with opacity ``fill``."""
     b = outline(P)
-    ax.fill(b[:, 0], b[:, 1], color=color, alpha=0.15, linewidth=0, zorder=2)
+    if fill:
+        ax.fill(b[:, 0], b[:, 1], color=color, alpha=fill, linewidth=0, zorder=2)
     ax.plot(b[:, 0], b[:, 1], color=color, linewidth=1.6, label=label, zorder=3)
 
 

@@ -93,25 +93,25 @@ In 3D, take the directions from `sphere_directions(k)` and a body such as `rando
 noise σ = 0.03.</sub></p>
 
 <p align="center">
-  <img src="examples/figures/outliers.png" width="720"
-       alt="Least squares pulled outward by outliers beside least absolute deviations, which ignores them">
+  <img src="examples/figures/noise.png" width="840"
+       alt="L2 and Hausdorff errors of least squares and least absolute deviations growing with the noise level on log axes">
 </p>
-<p align="center"><sub>160 measurements, 10% of them pushed outward by 0.4 to 0.9: least squares follows the
-outliers, least absolute deviations ignores them.</sub></p>
+<p align="center"><sub>Error against the noise level σ with k = 400 directions. With Gaussian noise least squares is
+slightly more accurate.</sub></p>
 
 <p align="center">
-  <img src="examples/figures/convergence.png" width="840"
-       alt="Median L2 and Hausdorff errors falling with k on log axes in 2D and 3D, beside the proven L2 rate">
+  <img src="examples/figures/outliers.png" width="480"
+       alt="Least squares pulled outward by scattered outliers while least absolute deviations stays on the true body">
 </p>
-<p align="center"><sub>Median error against the number of measurements k, with interquartile bands, in 2D and 3D. The
-dashed line has the slope of the proven bound on the L2 error, k<sup>−2/5</sup> in 2D and k<sup>−1/3</sup> in
-3D.</sub></p>
+<p align="center"><sub>With outliers least absolute deviations is the robust choice: least squares is pulled toward
+them.</sub></p>
 
 ```bash
 uv sync --extra examples
 uv run --extra examples python examples/reconstruction_2d.py   # also support_function.py, outliers.py, animation_2d.py
 uv run --extra examples python examples/reconstruction_3d.py   # saves the fit; --recompute fits again
-uv run --extra examples python examples/convergence.py         # about 30 s on the first run
+uv run --extra examples python examples/noise.py               # about 10 s on the first run
+uv run --extra examples python examples/convergence.py         # error against k in 2D and 3D, about 30 s
 ```
 
 ## References
