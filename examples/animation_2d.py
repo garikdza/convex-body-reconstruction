@@ -19,7 +19,7 @@ from matplotlib.patches import Patch
 
 from draw import draw_body, draw_estimate, draw_measurements, setup_2d
 from shapes import rounded_heptagon
-from src import circle_directions, hausdorff_distance, l2_distance, measure, reconstruct
+from src import circle_directions, hausdorff_distance, l2_distance, noisy_support, reconstruct
 from style import HAUSDORFF_ERROR, INK, L2_ERROR, LSQ, MEASUREMENT, MINIMAL, TRUTH
 
 KS = np.unique(np.round(np.geomspace(5, 400, 48)).astype(int))
@@ -35,8 +35,8 @@ def main() -> None:
     fits = []
     for k in KS:
         U = circle_directions(int(k), offset=0.3)
-        y = measure(K, U, SIGMA, rng=int(k))
-        P = reconstruct(U, y).polytope
+        y = noisy_support(K, U, SIGMA, rng=int(k))
+        P = reconstruct(U, y)
         fits.append((U, y, P))
     l2 = np.array([l2_distance(K, P) for _, _, P in fits])
     hausdorff = np.array([hausdorff_distance(K, P) for _, _, P in fits])

@@ -5,7 +5,7 @@ matplotlib.
 
 import numpy as np
 
-from src import ConvexBody, Polytope, to_polytope
+from src.bodies import ConvexBody, Polytope, to_polytope
 from style import MEASUREMENT, TRUTH
 
 # the 3D view and the light direction relative to it

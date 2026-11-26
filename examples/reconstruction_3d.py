@@ -2,7 +2,7 @@
 A rounded 3D polytope beside its reconstructions from 60 and 600 noisy measurements
 (``figures/reconstruction_3d.png``).
 
-The fitted support values are saved to ``figures/reconstruction_3d.npz`` and later runs plot from them;
+The vertices of the estimates are saved to ``figures/reconstruction_3d.npz`` and later runs plot from them;
 ``--recompute`` fits again.
 
 Run with ``uv run --extra examples python examples/reconstruction_3d.py``.
@@ -17,7 +17,8 @@ import numpy as np
 from draw import draw_polytope_3d
 from results import load_or_compute, parse_args
 from shapes import rounded_polytope
-from src import Polytope, hausdorff_distance, measure, reconstruct, sphere_directions, to_polytope
+from src import Polytope, hausdorff_distance, noisy_support, reconstruct, sphere_directions
+from src.bodies import to_polytope
 from style import LSQ, MINIMAL, TRUTH_3D
 
 KS = (60, 600)
@@ -27,21 +28,20 @@ RESULTS = FIGURES / 'reconstruction_3d.npz'
 
 
 def compute() -> dict[str, np.ndarray]:
-    """Fit each ``k`` in ``KS`` and keep the directions, the fitted support values and the solve time."""
+    """Fit each ``k`` in ``KS`` and keep the vertices of each estimate and the solve time."""
     K = rounded_polytope()
     results = {'ks': np.array(KS)}
     for k in KS:
         U = sphere_directions(k)
         start = time.perf_counter()
-        rec = reconstruct(U, measure(K, U, SIGMA, rng=k))
+        P = reconstruct(U, noisy_support(K, U, SIGMA, rng=k))
         results[f'seconds_{k}'] = np.array(time.perf_counter() - start)
-        results[f'directions_{k}'] = U
-        results[f'support_values_{k}'] = rec.support_values
+        results[f'vertices_{k}'] = P.vertices
     return results
 
 
 def plot(results: dict[str, np.ndarray]) -> None:
-    """Rebuild each estimate from its saved support values and draw it beside the true body."""
+    """Rebuild each estimate from its saved vertices and draw it beside the true body."""
     K = rounded_polytope()
     with plt.rc_context(MINIMAL):
         fig = plt.figure(figsize=(12, 4))
@@ -49,7 +49,7 @@ def plot(results: dict[str, np.ndarray]) -> None:
         draw_polytope_3d(ax, to_polytope(K), TRUTH_3D)
         ax.set_title('true body\n')
         for i, k in enumerate(results['ks']):
-            P = Polytope.from_halfspaces(results[f'directions_{k}'], results[f'support_values_{k}'])
+            P = Polytope(results[f'vertices_{k}'])
             seconds = float(results[f'seconds_{k}'])
             error = hausdorff_distance(K, P)
             print(f'k={k:<4} Hausdorff error {error:.3f}, solved in {seconds:.2f} s')

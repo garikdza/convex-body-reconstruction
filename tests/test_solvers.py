@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 from src.directions import circle_directions, random_directions, sphere_directions
-from src.simulate import measure, random_polygon, random_polytope
+from src.simulate import noisy_support, random_polygon, random_polytope
 from src.solvers import fit_local_2d, fit_pairwise
 
 # interior-point solvers return the optimum to about 1e-5 here (bodies of unit size)
@@ -39,7 +39,7 @@ def test_consistent_values_returned_unchanged(fit, loss: str):
 def test_local_and_pairwise_same_optimum(loss: str):
     rng = np.random.default_rng(0)
     U = random_directions(60, 2, rng)
-    y = measure(random_polygon(6, rng), U, sigma=0.2, rng=rng)
+    y = noisy_support(random_polygon(6, rng), U, sigma=0.2, rng=rng)
     local, pairwise = fit_local_2d(U, y, loss), fit_pairwise(U, y, loss)
     if loss == 'lsq':  # strictly convex objective, so the optimum is unique
         np.testing.assert_allclose(local, pairwise, atol=TOL)
@@ -57,7 +57,7 @@ def test_pairwise_adds_constraints_beyond_neighbours_3d():
 
 def test_pairwise_gives_up_after_max_rounds():
     U = sphere_directions(80)
-    y = measure(random_polytope(12, rng=1), U, sigma=0.1, rng=2)
+    y = noisy_support(random_polytope(12, rng=1), U, sigma=0.1, rng=2)
     with pytest.raises(RuntimeError, match='max_rounds=1'):
         fit_pairwise(U, y, n_neighbors=1, max_rounds=1)
 

@@ -14,7 +14,7 @@ import numpy as np
 
 from results import load_or_compute, parse_args
 from shapes import rounded_heptagon
-from src import circle_directions, hausdorff_distance, l2_distance, measure, reconstruct
+from src import circle_directions, hausdorff_distance, l2_distance, noisy_support, reconstruct
 from style import LAD, LSQ, MINIMAL
 
 K_MEASUREMENTS = 400
@@ -36,7 +36,7 @@ def compute() -> dict[str, np.ndarray]:
         for a, sigma in enumerate(SIGMAS):
             for draw in range(DRAWS):
                 # the same noise for both methods, so they are compared on identical measurements
-                P = reconstruct(U, measure(K, U, sigma, rng=1000 * a + draw), method=method).polytope
+                P = reconstruct(U, noisy_support(K, U, sigma, rng=1000 * a + draw), method=method)
                 l2[a, draw] = l2_distance(K, P)
                 hausdorff[a, draw] = hausdorff_distance(K, P)
             print(f'{method} σ={sigma:<6.3f} L2 {np.median(l2[a]):.4f}  Hausdorff {np.median(hausdorff[a]):.4f}')

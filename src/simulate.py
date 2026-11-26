@@ -49,11 +49,11 @@ def random_polytope(n: int, rng: np.random.Generator | int | None = None) -> Pol
     return Polytope(v)
 
 
-def measure(
+def noisy_support(
     body: ConvexBody, directions: np.ndarray, sigma: float = 0.0, rng: np.random.Generator | int | None = None
 ) -> np.ndarray:
     """
-    Noisy support-function measurements ``y_i = h_K(u_i) + e_i``, with ``e_i`` independent ``N(0, sigma^2)``.
+    Simulated measurements ``y_i = h_K(u_i) + e_i``: the support function plus independent ``N(0, sigma^2)`` noise.
 
     Parameters
     ----------

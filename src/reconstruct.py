@@ -1,55 +1,17 @@
-from dataclasses import dataclass
-from typing import Literal
-
 import numpy as np
 
 from src.bodies import Polytope
 from src.geometry import chebyshev_center
 from src.solvers import Loss, fit_local_2d, fit_pairwise
 
-Formulation = Literal['auto', 'pairwise', 'local']
 
-
-@dataclass
-class Reconstruction:
-    """
-    Result of ``reconstruct``.
-
-    Attributes
-    ----------
-    directions : np.ndarray
-        measurement directions, shape ``(k, d)``
-    measurements : np.ndarray
-        noisy measurements ``y``, shape ``(k,)``
-    support_values : np.ndarray
-        fitted consistent support values ``h``, shape ``(k,)``
-    polytope : Polytope
-        the estimate ``{x : <x, u_i> <= h_i for all i}``, whose support function at ``u_i`` is ``h_i``
-    """
-
-    directions: np.ndarray
-    measurements: np.ndarray
-    support_values: np.ndarray
-    polytope: Polytope
-
-    @property
-    def residuals(self) -> np.ndarray:
-        """Measurements minus fitted support values, shape ``(k,)``."""
-        return self.measurements - self.support_values
-
-
-def reconstruct(
-    directions: np.ndarray,
-    measurements: np.ndarray,
-    method: Loss = 'lsq',
-    formulation: Formulation = 'auto',
-    solver: str | None = None,
-) -> Reconstruction:
+def reconstruct(directions: np.ndarray, measurements: np.ndarray, method: Loss = 'lsq') -> Polytope:
     """
     Estimate a convex body from noisy measurements ``y_i = h_K(u_i) + e_i`` of its support function.
 
-    Fits the consistent support values closest to the measurements and returns the polytope they define, Algorithm
-    NoisySupportLSQ of Gardner, Kiderlen & Milanfar (2006), due to Prince & Willsky (1990).
+    Fits the consistent support values ``h`` closest to the measurements and returns the polytope they define,
+    Algorithm NoisySupportLSQ of Gardner, Kiderlen & Milanfar (2006), due to Prince & Willsky (1990). Consistency is
+    imposed with ``fit_local_2d`` in 2D and ``fit_pairwise`` in 3D.
 
     Parameters
     ----------
@@ -59,27 +21,16 @@ def reconstruct(
         measurements ``y_i``, shape ``(k,)``
     method : {'lsq', 'lad'}
         least squares (a quadratic program) or least absolute deviations (a linear program, robust to outliers)
-    formulation : {'auto', 'local', 'pairwise'}
-        consistency constraints: ``'local'`` (2D only, ``fit_local_2d``) or ``'pairwise'`` (``fit_pairwise``);
-        ``'auto'`` uses ``'local'`` in 2D and ``'pairwise'`` in 3D
-    solver : str | None
-        cvxpy solver name; ``None`` uses Clarabel
 
     Returns
     -------
-    reconstruction : Reconstruction
-        the estimate and the fitted support values
+    P : Polytope
+        the estimate ``{x : <x, u_i> <= h_i for all i}``; its support function at ``u_i`` is the fitted ``h_i``, so
+        ``P.support(directions)`` gives the fitted values and ``measurements - P.support(directions)`` the residuals
     """
     U, y = _validate(directions, measurements, method)
-    if formulation == 'auto':
-        formulation = 'local' if U.shape[1] == 2 else 'pairwise'
-    if formulation == 'local':
-        h = fit_local_2d(U, y, method, solver)
-    elif formulation == 'pairwise':
-        h = fit_pairwise(U, y, method, solver)
-    else:
-        raise ValueError(f"formulation must be 'auto', 'local' or 'pairwise', got {formulation!r}")
-    return Reconstruction(U, y, h, Polytope.from_halfspaces(U, h))
+    fit = fit_local_2d if U.shape[1] == 2 else fit_pairwise
+    return Polytope.from_halfspaces(U, fit(U, y, method))
 
 
 def _validate(directions: np.ndarray, measurements: np.ndarray, method: str) -> tuple[np.ndarray, np.ndarray]:

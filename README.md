@@ -33,14 +33,13 @@ k grows the polytope converges to K ([Gardner, Kiderlen & Milanfar, 2006](https:
 | `'lsq'` (default) | least squares                                 | quadratic program |
 | `'lad'`           | least absolute deviations, robust to outliers | linear program    |
 
-**Consistency constraints**, chosen with `formulation`, which make h<sub>1</sub>, …, h<sub>k</sub> the support values
-of a convex body:
+**Consistency constraints**, which make h<sub>1</sub>, …, h<sub>k</sub> the support values of a convex body:
 
-- `'local'` (2D only, the default there): with the directions sorted by angle, each line
+- In 2D: with the directions sorted by angle, each line
   ⟨x, u<sub>i</sub>⟩ = h<sub>i</sub> touches the polygon cut out by its two neighbours, one linear constraint per
   direction ([Lele, Kulkarni & Willsky, 1992](https://doi.org/10.1364/JOSAA.9.001693)). k = 20,000 solves in under a
   second.
-- `'pairwise'` (any dimension, the default in 3D): there are points x<sub>i</sub> with
+- In 3D: there are points x<sub>i</sub> with
   ⟨x<sub>i</sub>, u<sub>i</sub>⟩ = h<sub>i</sub> and ⟨x<sub>j</sub>, u<sub>i</sub>⟩ ≤ h<sub>i</sub> for all i, j. Only
   the constraints between nearby directions are active at the optimum, so they are added by constraint generation:
   start from each direction's nearest neighbours, solve, add the violated constraints and repeat. The result is
@@ -61,19 +60,19 @@ uv sync
 
 ```python
 import numpy as np
-from src import Ellipsoid, circle_directions, hausdorff_distance, measure, random_polygon, reconstruct
+from src import circle_directions, hausdorff_distance, random_polygon, reconstruct
 
-# a random polygon with its corners rounded by a disk of radius 0.1
-K = random_polygon(7, rng=0) + Ellipsoid(0.1 * np.eye(2), np.zeros(2))
-U = circle_directions(200)                # (200, 2) unit directions
-y = measure(K, U, sigma=0.05, rng=1)      # noisy support values
+K = random_polygon(7, rng=0)                                     # a test body
+U = circle_directions(200)                                       # 200 unit directions
+y = K.support(U) + 0.05 * np.random.default_rng(1).standard_normal(200)  # noisy support values
 
-rec = reconstruct(U, y)                   # method='lad' for the robust fit
-rec.polytope.vertices                     # the estimate, a polygon
-hausdorff_distance(K, rec.polytope)       # its distance to K
+P = reconstruct(U, y)                                            # the estimate, a Polytope; method='lad' is robust
+P.vertices                                                       # its vertices
+hausdorff_distance(K, P)                                         # its distance to K
 ```
 
 In 3D, take the directions from `sphere_directions(k)` and a body such as `random_polytope(n)` or `Ellipsoid(A, c)`.
+`noisy_support(K, U, sigma)` simulates the measurements in one call.
 
 ## Examples
 

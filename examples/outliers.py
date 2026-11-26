@@ -12,7 +12,7 @@ import numpy as np
 
 from draw import draw_body, draw_estimate, draw_measurements, setup_2d
 from shapes import rounded_heptagon
-from src import circle_directions, hausdorff_distance, measure, reconstruct
+from src import circle_directions, hausdorff_distance, noisy_support, reconstruct
 from style import LAD, LSQ, MINIMAL, OUTLIER
 
 K_MEASUREMENTS = 160
@@ -27,7 +27,7 @@ def main() -> None:
     K = rounded_heptagon()
     U = circle_directions(K_MEASUREMENTS)
     rng = np.random.default_rng(3)
-    y = measure(K, U, SIGMA, rng=rng)
+    y = noisy_support(K, U, SIGMA, rng=rng)
     bad = np.zeros(K_MEASUREMENTS, dtype=bool)
     bad[rng.choice(K_MEASUREMENTS, size=int(OUTLIER_SHARE * K_MEASUREMENTS), replace=False)] = True
     y[bad] += rng.uniform(*OUTLIER_SHIFT, bad.sum())
@@ -40,7 +40,7 @@ def main() -> None:
         # the true body goes under the estimates, so the one that matches it stays visible
         draw_body(ax, K, fill=0.06, on_top=False)
         for method, colour, name in (('lsq', LSQ, 'least squares'), ('lad', LAD, 'least absolute deviations')):
-            P = reconstruct(U, y, method=method).polytope
+            P = reconstruct(U, y, method=method)
             error = hausdorff_distance(K, P)
             print(f'{method}: Hausdorff error {error:.3f}')
             draw_estimate(ax, P, colour, label=f'{name}, error {error:.2f}', fill=0)

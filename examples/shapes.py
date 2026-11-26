@@ -2,7 +2,8 @@
 
 import numpy as np
 
-from src import ConvexBody, Ellipsoid, Polytope, random_polytope
+from src import Ellipsoid, Polytope, random_polytope
+from src.bodies import ConvexBody
 
 HEPTAGON = np.array(
     [[-1.0, -0.3], [-0.5, -0.8], [0.6, -0.72], [1.02, -0.05], [0.7, 0.62], [-0.05, 0.86], [-0.78, 0.42]]
