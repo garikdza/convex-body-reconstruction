@@ -6,7 +6,7 @@ matplotlib.
 import numpy as np
 
 from src import ConvexBody, Polytope, to_polytope
-from style import INK_SOFT, MEASUREMENT, TRUTH
+from style import MEASUREMENT, TRUTH
 
 # the 3D view and the light direction relative to it
 ELEV, AZIM = 24, -58
@@ -85,11 +85,6 @@ def draw_measurements(
     segments = np.stack([p - HALF_LENGTH * t, p + HALF_LENGTH * t, np.full_like(p, np.nan)], axis=1).reshape(-1, 2)
     ax.plot(segments[:, 0], segments[:, 1], color=color, linewidth=1.0, alpha=alpha, label=label, zorder=1)
     ax.scatter(p[:, 0], p[:, 1], s=6 if len(y) > 100 else 12, color=color, alpha=fade, linewidth=0, zorder=5)
-
-
-def caption(ax, text: str) -> None:
-    """Small text centred under the axes content."""
-    ax.text(0.5, 0.01, text, transform=ax.transAxes, ha='center', color=INK_SOFT, fontsize=9)
 
 
 def _unit(elev: float, azim: float) -> np.ndarray:

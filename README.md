@@ -86,10 +86,8 @@ noise σ = 0.03.</sub></p>
 
 [`examples/`](examples) has one script per figure; the figures are in [`examples/figures/`](examples/figures):
 
-- [`reconstruction_2d.py`](examples/reconstruction_2d.py): reconstructions from 10, 40 and 300 measurements.
 - [`noise.py`](examples/noise.py): the error of least squares and least absolute deviations against the noise level.
 - [`outliers.py`](examples/outliers.py): least squares pulled by outliers, least absolute deviations unaffected.
-- [`convergence.py`](examples/convergence.py): the error against k in 2D and 3D beside the proven L2 rate.
 - [`support_function.py`](examples/support_function.py) and [`animation_2d.py`](examples/animation_2d.py): the
   figures above.
 
