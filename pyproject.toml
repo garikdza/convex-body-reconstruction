@@ -34,7 +34,6 @@ packages = ["src"]
 [tool.ruff]
 line-length = 120
 src = [".", "examples"]
-extend-exclude = ["*.ipynb"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "N"]

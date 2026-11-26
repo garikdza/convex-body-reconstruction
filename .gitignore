@@ -19,7 +19,6 @@ dist/
 .coverage.*
 coverage.xml
 htmlcov/
-.ipynb_checkpoints/
 
 # editors
 .idea/
