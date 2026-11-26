@@ -84,7 +84,7 @@ In 3D, take the directions from `sphere_directions(k)` and a body such as `rando
 <p align="center"><sub>A rounded random polytope and its least-squares reconstructions from 60 and 600 directions with
 noise σ = 0.03.</sub></p>
 
-More in [`examples/`](examples), with the figures in [`examples/figures/`](examples/figures):
+More in [`examples/`](examples):
 
 - [`noise.py`](examples/noise.py): the error of least squares and least absolute deviations against the noise level.
 - [`outliers.py`](examples/outliers.py): least squares pulled by outliers, least absolute deviations unaffected.
