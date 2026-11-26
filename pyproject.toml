@@ -40,8 +40,6 @@ select = ["E", "F", "I", "UP", "B", "N"]
 
 [tool.ruff.format]
 quote-style = "single"
-# README code blocks keep their hand-aligned comments
-exclude = ["*.md"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
