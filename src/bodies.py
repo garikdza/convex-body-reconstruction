@@ -6,8 +6,9 @@ from scipy.spatial import ConvexHull
 from src.directions import evenly_spread
 from src.geometry import halfspace_vertices
 
-# directions whose support points span the polytope that to_polytope returns, by dimension
-POLYTOPE_DIRECTIONS = {2: 2000, 3: 4000}
+# directions whose support points span the polytope that to_polytope returns; enough in 2D and 3D for an
+# approximation within 0.001 of a body of unit size
+POLYTOPE_DIRECTIONS = 2000
 
 
 class ConvexBody(ABC):
@@ -56,22 +57,20 @@ class ConvexBody(ABC):
             for each row ``u`` of ``directions``, a point ``x`` of the body with ``<x, u> = h_K(u)``, shape ``(k, d)``
         """
 
-    def to_polytope(self, n: int | None = None) -> 'Polytope':
+    def to_polytope(self, n: int = POLYTOPE_DIRECTIONS) -> 'Polytope':
         """
         A fine inscribed polytope approximating the body, for drawing it and measuring its volume.
 
         Parameters
         ----------
-        n : int | None
-            number of evenly spread directions whose support points span the polytope; ``None`` uses
-            ``POLYTOPE_DIRECTIONS``
+        n : int
+            number of evenly spread directions whose support points span the polytope
 
         Returns
         -------
         polytope : Polytope
             convex hull of the support points
         """
-        n = n or POLYTOPE_DIRECTIONS[self.dim]
         return Polytope(self.support_points(evenly_spread(n, self.dim)))
 
     def __add__(self, other: 'ConvexBody') -> 'MinkowskiSum':
@@ -127,7 +126,7 @@ class Polytope(ConvexBody):
     def support_points(self, directions: np.ndarray) -> np.ndarray:
         return self._vertices[(np.atleast_2d(directions) @ self._vertices.T).argmax(axis=1)]
 
-    def to_polytope(self, n: int | None = None) -> 'Polytope':
+    def to_polytope(self, n: int = POLYTOPE_DIRECTIONS) -> 'Polytope':
         return self
 
     def __repr__(self) -> str:
