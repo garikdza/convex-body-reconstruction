@@ -1,0 +1,57 @@
+import numpy as np
+
+from src.bodies import ConvexBody
+from src.directions import evenly_spread
+
+# directions the distances are sampled on, by dimension
+DISTANCE_DIRECTIONS = {2: 20_000, 3: 50_000}
+
+
+def hausdorff_distance(body: ConvexBody, other: ConvexBody, n_directions: int | None = None) -> float:
+    """
+    Hausdorff distance between two convex bodies, ``max_u |h_K(u) - h_L(u)|`` over unit ``u``.
+
+    Parameters
+    ----------
+    body, other : ConvexBody
+        bodies of the same dimension
+    n_directions : int | None
+        number of evenly spread directions the maximum is taken over; ``None`` uses ``DISTANCE_DIRECTIONS``
+
+    Returns
+    -------
+    distance : float
+        the distance; a sampled maximum, so a lower bound that is tight for this many directions
+    """
+    return float(np.abs(_support_gap(body, other, n_directions)).max())
+
+
+def l2_distance(body: ConvexBody, other: ConvexBody, n_directions: int | None = None) -> float:
+    """
+    L2 distance between the support functions of two convex bodies, ``(mean_u (h_K(u) - h_L(u))^2)^(1/2)``.
+
+    The mean is over the uniform probability measure on the unit sphere, so this is the L2 norm used by Gardner,
+    Kiderlen & Milanfar (2006) divided by the square root of the sphere's surface area.
+
+    Parameters
+    ----------
+    body, other : ConvexBody
+        bodies of the same dimension
+    n_directions : int | None
+        number of evenly spread directions the mean is taken over; ``None`` uses ``DISTANCE_DIRECTIONS``
+
+    Returns
+    -------
+    distance : float
+        the distance
+    """
+    return float(np.sqrt(np.mean(_support_gap(body, other, n_directions) ** 2)))
+
+
+def _support_gap(body: ConvexBody, other: ConvexBody, n_directions: int | None) -> np.ndarray:
+    if body.dim != other.dim:
+        raise ValueError(f'bodies must have the same dimension, got {body.dim} and {other.dim}')
+    if n_directions is None:
+        n_directions = DISTANCE_DIRECTIONS[body.dim]
+    directions = evenly_spread(n_directions, body.dim)
+    return body.support(directions) - other.support(directions)
