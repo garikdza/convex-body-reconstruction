@@ -4,6 +4,9 @@ from src.bodies import Polytope
 from src.geometry import chebyshev_center
 from src.solvers import Loss, fit_local_2d, fit_pairwise
 
+# how far the norm of a direction may be from 1
+UNIT_TOL = 1e-8
+
 
 def reconstruct(directions: np.ndarray, measurements: np.ndarray, method: Loss = 'lsq') -> Polytope:
     """
@@ -43,7 +46,7 @@ def _validate(directions: np.ndarray, measurements: np.ndarray, method: str) -> 
         raise ValueError(f'expected {k} measurements, one per direction, got {y.size}')
     if k < d + 1:
         raise ValueError(f'need at least {d + 1} directions in {d}D, got {k}')
-    if not np.allclose(np.linalg.norm(U, axis=1), 1.0, atol=1e-8):
+    if not np.allclose(np.linalg.norm(U, axis=1), 1.0, atol=UNIT_TOL):
         raise ValueError('directions must be unit vectors')
     if method not in ('lsq', 'lad'):
         raise ValueError(f"method must be 'lsq' or 'lad', got {method!r}")

@@ -20,6 +20,10 @@ The project is managed with uv (`pyproject.toml`, hatchling backend). The packag
 - CI (`.github/workflows/ci.yml`) runs ruff, the format check and the tests with coverage on pushes to `main` and on PRs, and uploads the report to Codecov.
 - Nothing here needs a GPU. Prefix Python runs with `CUDA_VISIBLE_DEVICES=""`, as the global GPU rule requires.
 
+## Constants
+
+No magic numbers in function bodies or default arguments: every tolerance, size, count, seed, colour and layout value is a named constant at the top of its module, with a comment saying what it does (the solver settings in `src/solvers.py`, the drawing sizes and z-orders in `examples/draw.py`, the colours in `examples/style.py`, each script's settings at its top). Docstrings name the constant rather than repeat its value. Mathematical constants stay inline: 2π, the golden angle, the dimensions 2 and 3, the quartiles 25/50/75.
+
 ## Local folder
 
 `local/` at the repository root is gitignored and never committed. Keep anything project-related that should not be tracked there: scratch scripts, drafts, notes, or code set aside from the package or the examples. Organise it in subfolders by topic. Ruff skips it through `.gitignore` and pytest only collects `tests/`, so nothing in it is linted or tested.

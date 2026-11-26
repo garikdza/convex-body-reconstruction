@@ -2,6 +2,9 @@ import numpy as np
 from scipy.optimize import linprog
 from scipy.spatial import HalfspaceIntersection
 
+# an inscribed radius below this, relative to the largest offset, counts as an empty interior
+EMPTY_INTERIOR_TOL = 1e-9
+
 
 def chebyshev_center(U: np.ndarray, h: np.ndarray) -> tuple[np.ndarray, float]:
     """
@@ -60,6 +63,6 @@ def halfspace_vertices(U: np.ndarray, h: np.ndarray) -> np.ndarray:
     U = np.asarray(U, dtype=float)
     h = np.asarray(h, dtype=float)
     center, radius = chebyshev_center(U, h)
-    if radius <= 1e-9 * max(1.0, float(np.abs(h).max())):
+    if radius <= EMPTY_INTERIOR_TOL * max(1.0, float(np.abs(h).max())):
         raise ValueError('halfspace intersection has empty interior')
     return HalfspaceIntersection(np.column_stack([U, -h]), center).intersections

@@ -3,6 +3,11 @@ import numpy as np
 from src.bodies import ConvexBody, Polytope
 from src.directions import random_directions
 
+# the random points of the test bodies are drawn at radii in this range
+RADII = (0.7, 1.0)
+# semi-axes of the ellipsoid random_polytope is drawn near
+SEMI_AXES = (1.0, 0.8, 0.6)
+
 
 def random_polygon(n: int, rng: np.random.Generator | int | None = None) -> Polytope:
     """
@@ -11,7 +16,7 @@ def random_polygon(n: int, rng: np.random.Generator | int | None = None) -> Poly
     Parameters
     ----------
     n : int
-        number of points drawn at random angles and radii in [0.7, 1]; the polygon is their convex hull
+        number of points drawn at random angles and radii in ``RADII``; the polygon is their convex hull
     rng : np.random.Generator | int | None
         random generator or seed
 
@@ -22,18 +27,18 @@ def random_polygon(n: int, rng: np.random.Generator | int | None = None) -> Poly
     """
     rng = np.random.default_rng(rng)
     theta = np.sort(rng.uniform(0, 2 * np.pi, n))
-    r = rng.uniform(0.7, 1.0, n)
+    r = rng.uniform(*RADII, n)
     return Polytope(np.column_stack([r * np.cos(theta), r * np.sin(theta)]))
 
 
 def random_polytope(n: int, rng: np.random.Generator | int | None = None) -> Polytope:
     """
-    A random convex polytope near the ellipsoid with semi-axes 1, 0.8 and 0.6.
+    A random convex polytope near the ellipsoid with semi-axes ``SEMI_AXES``.
 
     Parameters
     ----------
     n : int
-        number of points drawn in random directions at radii in [0.7, 1], then scaled to the semi-axes; the polytope
+        number of points drawn in random directions at radii in ``RADII``, then scaled to the semi-axes; the polytope
         is their convex hull
     rng : np.random.Generator | int | None
         random generator or seed
@@ -45,7 +50,7 @@ def random_polytope(n: int, rng: np.random.Generator | int | None = None) -> Pol
     """
     rng = np.random.default_rng(rng)
     v = random_directions(n, 3, rng)
-    v *= rng.uniform(0.7, 1.0, (n, 1)) * np.array([1.0, 0.8, 0.6])
+    v *= rng.uniform(*RADII, (n, 1)) * np.array(SEMI_AXES)
     return Polytope(v)
 
 

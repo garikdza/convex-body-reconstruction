@@ -19,6 +19,8 @@ MEASUREMENT = '#eb6834'
 OUTLIER = '#c0392b'
 LSQ = '#2a78d6'
 LAD = '#1baf7a'
+# facet edges of a 3D estimate
+LSQ_EDGE = '#0d366b'
 # the two error measures, in the animation's error panel
 L2_ERROR = '#2a78d6'
 HAUSDORFF_ERROR = '#eb6834'

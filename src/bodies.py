@@ -6,6 +6,9 @@ from scipy.spatial import ConvexHull
 from src.directions import evenly_spread
 from src.geometry import halfspace_vertices
 
+# directions whose support points span the polytope that to_polytope returns, by dimension
+POLYTOPE_DIRECTIONS = {2: 2000, 3: 4000}
+
 
 class ConvexBody(ABC):
     """
@@ -60,15 +63,15 @@ class ConvexBody(ABC):
         Parameters
         ----------
         n : int | None
-            number of evenly spread directions whose support points span the polytope; ``None`` uses 2000 in 2D and
-            4000 in 3D
+            number of evenly spread directions whose support points span the polytope; ``None`` uses
+            ``POLYTOPE_DIRECTIONS``
 
         Returns
         -------
         P : Polytope
             convex hull of the support points
         """
-        n = n or (2000 if self.dim == 2 else 4000)
+        n = n or POLYTOPE_DIRECTIONS[self.dim]
         return Polytope(self.support_points(evenly_spread(n, self.dim)))
 
     def __add__(self, other: 'ConvexBody') -> 'MinkowskiSum':

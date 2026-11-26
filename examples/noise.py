@@ -20,6 +20,14 @@ from style import LAD, LSQ, MINIMAL
 K_MEASUREMENTS = 400
 SIGMAS = np.geomspace(0.005, 0.5, 11)
 DRAWS = 10
+# the seed of draw j at noise level a is SEED_STRIDE * a + j
+SEED_STRIDE = 1000
+FIGSIZE = (10, 4.2)
+# opacity of the interquartile bands and size of the median dots
+BAND_ALPHA = 0.15
+DOT_SIZE = 20
+# the dots go above the lines (zorder 2)
+DOT_Z = 3
 METHODS = (('lsq', LSQ, 'least squares'), ('lad', LAD, 'least absolute deviations'))
 ERRORS = (('l2', 'L2 error'), ('hausdorff', 'Hausdorff error'))
 FIGURES = Path(__file__).parent / 'figures'
@@ -36,7 +44,7 @@ def compute() -> dict[str, np.ndarray]:
         for a, sigma in enumerate(SIGMAS):
             for draw in range(DRAWS):
                 # the same noise for both methods, so they are compared on identical measurements
-                P = reconstruct(U, noisy_support(K, U, sigma, rng=1000 * a + draw), method=method)
+                P = reconstruct(U, noisy_support(K, U, sigma, rng=SEED_STRIDE * a + draw), method=method)
                 l2[a, draw] = l2_distance(K, P)
                 hausdorff[a, draw] = hausdorff_distance(K, P)
             print(f'{method} σ={sigma:<6.3f} L2 {np.median(l2[a]):.4f}  Hausdorff {np.median(hausdorff[a]):.4f}')
@@ -49,14 +57,14 @@ def plot(results: dict[str, np.ndarray]) -> None:
     """Draw the median errors with their interquartile bands on log axes, one panel per error measure."""
     sigmas = results['sigmas']
     with plt.rc_context(MINIMAL):
-        fig, axes = plt.subplots(1, 2, figsize=(10, 4.2))
+        fig, axes = plt.subplots(1, 2, figsize=FIGSIZE)
         for ax, (error, title) in zip(axes, ERRORS, strict=True):
             for method, colour, name in METHODS:
                 errors = results[f'{error}_{method}']
                 q1, median, q3 = np.percentile(errors, [25, 50, 75], axis=1)
-                ax.fill_between(sigmas, q1, q3, color=colour, alpha=0.15, linewidth=0)
+                ax.fill_between(sigmas, q1, q3, color=colour, alpha=BAND_ALPHA, linewidth=0)
                 ax.plot(sigmas, median, color=colour, label=name)
-                ax.scatter(sigmas, median, s=20, color=colour, zorder=3)
+                ax.scatter(sigmas, median, s=DOT_SIZE, color=colour, zorder=DOT_Z)
             ax.set_xscale('log')
             ax.set_yscale('log')
             ax.set_xlabel('noise σ')

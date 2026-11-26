@@ -3,6 +3,9 @@ import numpy as np
 from src.bodies import ConvexBody
 from src.directions import evenly_spread
 
+# directions the distances are sampled on, by dimension
+DISTANCE_DIRECTIONS = {2: 20_000, 3: 50_000}
+
 
 def hausdorff_distance(K: ConvexBody, L: ConvexBody, n_directions: int | None = None) -> float:
     """
@@ -13,7 +16,7 @@ def hausdorff_distance(K: ConvexBody, L: ConvexBody, n_directions: int | None = 
     K, L : ConvexBody
         bodies of the same dimension
     n_directions : int | None
-        number of evenly spread directions the maximum is taken over; ``None`` uses 20000 in 2D and 50000 in 3D
+        number of evenly spread directions the maximum is taken over; ``None`` uses ``DISTANCE_DIRECTIONS``
 
     Returns
     -------
@@ -35,7 +38,7 @@ def l2_distance(K: ConvexBody, L: ConvexBody, n_directions: int | None = None) -
     K, L : ConvexBody
         bodies of the same dimension
     n_directions : int | None
-        number of evenly spread directions the mean is taken over; ``None`` uses 20000 in 2D and 50000 in 3D
+        number of evenly spread directions the mean is taken over; ``None`` uses ``DISTANCE_DIRECTIONS``
 
     Returns
     -------
@@ -49,6 +52,6 @@ def _support_gap(K: ConvexBody, L: ConvexBody, n_directions: int | None) -> np.n
     if K.dim != L.dim:
         raise ValueError(f'bodies must have the same dimension, got {K.dim} and {L.dim}')
     if n_directions is None:
-        n_directions = 20_000 if K.dim == 2 else 50_000
+        n_directions = DISTANCE_DIRECTIONS[K.dim]
     U = evenly_spread(n_directions, K.dim)
     return K.support(U) - L.support(U)

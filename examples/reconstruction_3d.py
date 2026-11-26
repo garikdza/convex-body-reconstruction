@@ -18,10 +18,13 @@ from draw import draw_polytope_3d
 from results import load_or_compute, parse_args
 from shapes import rounded_polytope
 from src import Polytope, hausdorff_distance, noisy_support, reconstruct, sphere_directions
-from style import LSQ, MINIMAL, TRUTH_3D
+from style import LSQ, LSQ_EDGE, MINIMAL, TRUTH_3D
 
 KS = (60, 600)
 SIGMA = 0.03
+FIGSIZE = (12, 4)
+# negative spacing and bottom margin pull the panels together and crop the empty space of the 3D axes
+MARGINS = {'wspace': -0.05, 'left': 0, 'right': 1, 'top': 1, 'bottom': -0.08}
 FIGURES = Path(__file__).parent / 'figures'
 RESULTS = FIGURES / 'reconstruction_3d.npz'
 
@@ -42,9 +45,10 @@ def compute() -> dict[str, np.ndarray]:
 def plot(results: dict[str, np.ndarray]) -> None:
     """Rebuild each estimate from its saved vertices and draw it beside the true body."""
     K = rounded_polytope()
+    panels = len(results['ks']) + 1  # the true body, then one estimate per k
     with plt.rc_context(MINIMAL):
-        fig = plt.figure(figsize=(12, 4))
-        ax = fig.add_subplot(1, 3, 1, projection='3d')
+        fig = plt.figure(figsize=FIGSIZE)
+        ax = fig.add_subplot(1, panels, 1, projection='3d')
         draw_polytope_3d(ax, K.to_polytope(), TRUTH_3D)
         ax.set_title('true body\n')
         for i, k in enumerate(results['ks']):
@@ -52,11 +56,11 @@ def plot(results: dict[str, np.ndarray]) -> None:
             seconds = float(results[f'seconds_{k}'])
             error = hausdorff_distance(K, P)
             print(f'k={k:<4} Hausdorff error {error:.3f}, solved in {seconds:.2f} s')
-            ax = fig.add_subplot(1, 3, i + 2, projection='3d')
-            draw_polytope_3d(ax, P, LSQ, edge_color='#0d366b')
+            ax = fig.add_subplot(1, panels, i + 2, projection='3d')
+            draw_polytope_3d(ax, P, LSQ, edge_color=LSQ_EDGE)
             took = f'{seconds * 1000:.0f} ms' if seconds < 1 else f'{seconds:.1f} s'
             ax.set_title(f'k = {k} measurements\nHausdorff error {error:.3f}, solved in {took}')
-        fig.subplots_adjust(wspace=-0.05, left=0, right=1, top=1, bottom=-0.08)
+        fig.subplots_adjust(**MARGINS)
 
         path = FIGURES / 'reconstruction_3d.png'
         fig.savefig(path)

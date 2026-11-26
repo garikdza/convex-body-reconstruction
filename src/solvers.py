@@ -6,6 +6,14 @@ import scipy.sparse as sp
 
 Loss = Literal['lsq', 'lad']
 
+# directions whose angles differ by less than this are duplicates
+DISTINCT_ANGLE_TOL = 1e-12
+# constraint generation: neighbours per direction in the first round, rounds before giving up, and the violation,
+# relative to the largest measurement, that adds a constraint
+N_NEIGHBORS = 12
+MAX_ROUNDS = 50
+VIOLATION_TOL = 1e-7
+
 
 def fit_local_2d(U: np.ndarray, y: np.ndarray, loss: Loss = 'lsq', solver: str | None = None) -> np.ndarray:
     """
@@ -40,7 +48,7 @@ def fit_local_2d(U: np.ndarray, y: np.ndarray, loss: Loss = 'lsq', solver: str |
     order = np.argsort(theta)
     t = theta[order]
     gaps = np.diff(np.append(t, t[0] + 2 * np.pi))  # t_{i+1} - t_i, wrapping around
-    if np.any(gaps < 1e-12):
+    if np.any(gaps < DISTINCT_ANGLE_TOL):
         raise ValueError('directions must be distinct for the local formulation')
     if np.any(gaps >= np.pi):
         raise ValueError('directions must not lie in a closed half-plane')
@@ -66,8 +74,8 @@ def fit_pairwise(
     y: np.ndarray,
     loss: Loss = 'lsq',
     solver: str | None = None,
-    n_neighbors: int = 12,
-    max_rounds: int = 50,
+    n_neighbors: int = N_NEIGHBORS,
+    max_rounds: int = MAX_ROUNDS,
 ) -> np.ndarray:
     """
     Consistent support values closest to ``y``, written with contact points (any dimension).
@@ -110,7 +118,7 @@ def fit_pairwise(
     active = np.zeros((k, k), dtype=bool)
     active[np.repeat(np.arange(k), m), nbrs.ravel()] = True
 
-    tol = 1e-7 * max(1.0, float(np.abs(y).max()))
+    tol = VIOLATION_TOL * max(1.0, float(np.abs(y).max()))
     for _ in range(max_rounds):
         rows, cols = np.nonzero(active)
         _solve(cp.Problem(objective, [_pair_matrix(U, rows, cols) @ X <= 0]), solver)
