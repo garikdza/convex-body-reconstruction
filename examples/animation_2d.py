@@ -14,11 +14,13 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.animation import FuncAnimation, PillowWriter
+from matplotlib.lines import Line2D
+from matplotlib.patches import Patch
 
 from draw import draw_body, draw_estimate, draw_measurements, setup_2d
 from shapes import rounded_heptagon
 from src import circle_directions, hausdorff_distance, l2_distance, measure, reconstruct
-from style import HAUSDORFF_ERROR, INK, L2_ERROR, LSQ, MINIMAL
+from style import HAUSDORFF_ERROR, INK, L2_ERROR, LSQ, MEASUREMENT, MINIMAL, TRUTH
 
 KS = np.unique(np.round(np.geomspace(5, 400, 48)).astype(int))
 SIGMA = 0.05
@@ -55,8 +57,16 @@ def main() -> None:
         # fixed margins: the axes are redrawn every frame, so a layout computed once would not fit later frames
         fig.subplots_adjust(left=0.02, right=0.98, top=0.9, bottom=0.12, wspace=0.18)
 
+        # fixed legend handles: the drawn measurement lines get fainter as k grows and would barely show in a legend
+        handles = [
+            Line2D([], [], color=TRUTH, linewidth=1.8, label='true body'),
+            Patch(facecolor=LSQ + '26', edgecolor=LSQ, linewidth=1.6, label='reconstruction'),
+            Line2D([], [], color=MEASUREMENT, linewidth=1, marker='o', markersize=3, label='measurement'),
+        ]
+
         def draw(frame: tuple[int, float]) -> None:
             i, fade = frame
+            handles[2].set_alpha(fade)
             U, y, P = fits[i]
             left.clear()
             setup_2d(left)
@@ -65,6 +75,11 @@ def main() -> None:
             draw_estimate(left, P, LSQ)
             draw_body(left, K)
             left.set_title(f'k = {len(y)} measurements')
+            # the measurement entry fades with the measurements and goes once they have
+            shown = handles if fade > 0 else handles[:2]
+            legend = left.legend(handles=shown, loc='upper center', bbox_to_anchor=(0.5, 0.0), ncol=3, handlelength=1.6)
+            if fade > 0:
+                legend.get_texts()[2].set_alpha(fade)
 
             right.clear()
             right.plot(KS, reference, '--', color=INK, linewidth=1.2, label=r'proven L2 rate $k^{-2/5}$')

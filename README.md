@@ -12,7 +12,7 @@ Reconstruction of a convex body in 2D or 3D from noisy measurements of its suppo
 </p>
 <p align="center"><sub>Least-squares reconstruction of a rounded heptagon from k = 5 to 400 measurements with noise
 σ = 0.05, beside its L2 and Hausdorff errors and the proven L2 rate k<sup>−2/5</sup>. Each orange segment is a
-measured supporting line; at the end they fade out to leave the true body (black) and the estimate (blue).</sub></p>
+measured supporting line; at the end they fade out to leave the true body and the estimate.</sub></p>
 
 The support function of a convex body K is h<sub>K</sub>(u) = max<sub>x∈K</sub> ⟨x, u⟩, how far K extends in the
 direction u. Given unit directions u<sub>1</sub>, …, u<sub>k</sub> and measurements
