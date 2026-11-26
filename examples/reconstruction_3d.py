@@ -18,7 +18,6 @@ from draw import draw_polytope_3d
 from results import load_or_compute, parse_args
 from shapes import rounded_polytope
 from src import Polytope, hausdorff_distance, noisy_support, reconstruct, sphere_directions
-from src.bodies import to_polytope
 from style import LSQ, MINIMAL, TRUTH_3D
 
 KS = (60, 600)
@@ -46,7 +45,7 @@ def plot(results: dict[str, np.ndarray]) -> None:
     with plt.rc_context(MINIMAL):
         fig = plt.figure(figsize=(12, 4))
         ax = fig.add_subplot(1, 3, 1, projection='3d')
-        draw_polytope_3d(ax, to_polytope(K), TRUTH_3D)
+        draw_polytope_3d(ax, K.to_polytope(), TRUTH_3D)
         ax.set_title('true body\n')
         for i, k in enumerate(results['ks']):
             P = Polytope(results[f'vertices_{k}'])

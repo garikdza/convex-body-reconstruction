@@ -5,7 +5,7 @@ matplotlib.
 
 import numpy as np
 
-from src.bodies import ConvexBody, Polytope, to_polytope
+from src.bodies import ConvexBody, Polytope
 from style import MEASUREMENT, TRUTH
 
 # the 3D view and the light direction relative to it
@@ -19,7 +19,7 @@ HALF_LENGTH = 0.22
 
 def outline(body: ConvexBody) -> np.ndarray:
     """Closed boundary curve of a 2D body, its first point repeated at the end."""
-    v = to_polytope(body).vertices
+    v = body.to_polytope().vertices
     return np.vstack([v, v[:1]])
 
 

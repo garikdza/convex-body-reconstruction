@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
 
 import numpy as np
 from scipy.spatial import ConvexHull
@@ -54,11 +53,28 @@ class ConvexBody(ABC):
             for each row ``u`` of ``U``, a point ``x`` of ``K`` with ``<x, u> = h_K(u)``, shape ``(k, d)``
         """
 
+    def to_polytope(self, n: int | None = None) -> 'Polytope':
+        """
+        A fine inscribed polytope approximating the body, for drawing it and measuring its volume.
+
+        Parameters
+        ----------
+        n : int | None
+            number of evenly spread directions whose support points span the polytope; ``None`` uses 2000 in 2D and
+            4000 in 3D
+
+        Returns
+        -------
+        P : Polytope
+            convex hull of the support points
+        """
+        n = n or (2000 if self.dim == 2 else 4000)
+        return Polytope(self.support_points(evenly_spread(n, self.dim)))
+
     def __add__(self, other: 'ConvexBody') -> 'MinkowskiSum':
         return MinkowskiSum((self, other))
 
 
-@dataclass
 class Polytope(ConvexBody):
     """
     A convex polytope, the convex hull of its vertices.
@@ -68,22 +84,15 @@ class Polytope(ConvexBody):
     vertices : np.ndarray
         points whose convex hull is the polytope, shape ``(m, 2)`` or ``(m, 3)``; only the extreme points are kept,
         counter-clockwise in 2D
-
-    Attributes
-    ----------
-    hull : scipy.spatial.ConvexHull
-        convex hull of ``vertices``
     """
 
-    vertices: np.ndarray
-    hull: ConvexHull = field(init=False, repr=False)
-
-    def __post_init__(self) -> None:
-        pts = np.asarray(self.vertices, dtype=float)
+    def __init__(self, vertices: np.ndarray) -> None:
+        pts = np.asarray(vertices, dtype=float)
         if pts.ndim != 2 or pts.shape[1] not in (2, 3):
             raise ValueError(f'vertices must have shape (m, 2) or (m, 3), got {pts.shape}')
-        self.vertices = pts[ConvexHull(pts).vertices]
-        self.hull = ConvexHull(self.vertices)
+        self._vertices = pts[ConvexHull(pts).vertices]
+        # the hull of the extreme points alone, so its simplices index into ``vertices``
+        self._hull = ConvexHull(self._vertices)
 
     @classmethod
     def from_halfspaces(cls, U: np.ndarray, h: np.ndarray) -> 'Polytope':
@@ -91,22 +100,37 @@ class Polytope(ConvexBody):
         return cls(halfspace_vertices(U, h))
 
     @property
+    def vertices(self) -> np.ndarray:
+        """The extreme points, shape ``(m, d)``, counter-clockwise in 2D."""
+        return self._vertices
+
+    @property
+    def hull(self) -> ConvexHull:
+        """The convex hull of ``vertices``."""
+        return self._hull
+
+    @property
     def dim(self) -> int:
-        return self.vertices.shape[1]
+        return self._vertices.shape[1]
 
     @property
     def volume(self) -> float:
         """Area in 2D, volume in 3D."""
-        return float(self.hull.volume)
+        return float(self._hull.volume)
 
     def support(self, U: np.ndarray) -> np.ndarray:
-        return (np.atleast_2d(U) @ self.vertices.T).max(axis=1)
+        return (np.atleast_2d(U) @ self._vertices.T).max(axis=1)
 
     def support_points(self, U: np.ndarray) -> np.ndarray:
-        return self.vertices[(np.atleast_2d(U) @ self.vertices.T).argmax(axis=1)]
+        return self._vertices[(np.atleast_2d(U) @ self._vertices.T).argmax(axis=1)]
+
+    def to_polytope(self, n: int | None = None) -> 'Polytope':
+        return self
+
+    def __repr__(self) -> str:
+        return f'Polytope({len(self._vertices)} vertices in {self.dim}D)'
 
 
-@dataclass
 class Ellipsoid(ConvexBody):
     """
     The ellipse or ellipsoid ``{c + A z : |z| <= 1}``.
@@ -119,15 +143,14 @@ class Ellipsoid(ConvexBody):
         centre ``c``, shape ``(d,)``
     """
 
-    A: np.ndarray
-    center: np.ndarray
-
-    def __post_init__(self) -> None:
-        self.A = np.asarray(self.A, dtype=float)
-        self.center = np.asarray(self.center, dtype=float)
+    def __init__(self, A: np.ndarray, center: np.ndarray) -> None:
+        self.A = np.asarray(A, dtype=float)
+        self.center = np.asarray(center, dtype=float)
         d = self.center.size
         if self.center.shape != (d,) or self.A.shape != (d, d):
             raise ValueError(f'A must be (d, d) for a center of shape (d,), got {self.A.shape} and {self.center.shape}')
+        if np.linalg.matrix_rank(self.A) < d:
+            raise ValueError('A must be invertible')
 
     @property
     def dim(self) -> int:
@@ -141,8 +164,10 @@ class Ellipsoid(ConvexBody):
         W = np.atleast_2d(U) @ self.A
         return self.center + (W / np.linalg.norm(W, axis=1, keepdims=True)) @ self.A.T
 
+    def __repr__(self) -> str:
+        return f'Ellipsoid(A={self.A.tolist()}, center={self.center.tolist()})'
 
-@dataclass
+
 class MinkowskiSum(ConvexBody):
     """
     The Minkowski sum ``K_1 + ... + K_m``, usually built with ``+``.
@@ -150,12 +175,11 @@ class MinkowskiSum(ConvexBody):
     Parameters
     ----------
     parts : tuple[ConvexBody, ...]
-        the summands, all of the same dimension
+        the summands, all of the same dimension; summands that are sums themselves are flattened into their parts
     """
 
-    parts: tuple[ConvexBody, ...]
-
-    def __post_init__(self) -> None:
+    def __init__(self, parts: tuple[ConvexBody, ...]) -> None:
+        self.parts = tuple(q for K in parts for q in (K.parts if isinstance(K, MinkowskiSum) else (K,)))
         dims = [K.dim for K in self.parts]
         if len(set(dims)) != 1:
             raise ValueError(f'summands must have the same dimension, got {dims}')
@@ -170,28 +194,5 @@ class MinkowskiSum(ConvexBody):
     def support_points(self, U: np.ndarray) -> np.ndarray:
         return sum(K.support_points(U) for K in self.parts)
 
-    def __add__(self, other: ConvexBody) -> 'MinkowskiSum':
-        return MinkowskiSum((*self.parts, other))
-
-
-def to_polytope(body: ConvexBody, n: int | None = None) -> Polytope:
-    """
-    A fine inscribed polytope approximating ``body``, for drawing it and measuring its volume.
-
-    Parameters
-    ----------
-    body : ConvexBody
-        body to approximate; a ``Polytope`` is returned as it is
-    n : int | None
-        number of evenly spread directions whose support points span the polytope; ``None`` uses 2000 in 2D and
-        4000 in 3D
-
-    Returns
-    -------
-    P : Polytope
-        convex hull of the support points
-    """
-    if isinstance(body, Polytope):
-        return body
-    n = n or (2000 if body.dim == 2 else 4000)
-    return Polytope(body.support_points(evenly_spread(n, body.dim)))
+    def __repr__(self) -> str:
+        return ' + '.join(map(repr, self.parts))

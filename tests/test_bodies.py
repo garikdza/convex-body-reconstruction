@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from src.bodies import Ellipsoid, Polytope, to_polytope
+from src.bodies import Ellipsoid, Polytope
 from src.directions import evenly_spread
 from src.simulate import random_polygon, random_polytope
 
@@ -37,7 +37,7 @@ def test_minkowski_sum_rounded_square_area(square: Polytope):
     # the square of side 2 rounded by radius 0.5: 4 for the square, 4 * 2 * 0.5 for the side strips and pi / 4 for
     # the corners
     K = square + Ellipsoid(0.5 * np.eye(2), np.zeros(2))
-    assert to_polytope(K, 4000).volume == pytest.approx(8 + np.pi / 4, rel=1e-4)
+    assert K.to_polytope(4000).volume == pytest.approx(8 + np.pi / 4, rel=1e-4)
 
 
 @pytest.mark.parametrize(
@@ -45,6 +45,7 @@ def test_minkowski_sum_rounded_square_area(square: Polytope):
     [
         pytest.param(lambda: Polytope(np.zeros((5, 4))), r'shape \(m, 2\) or \(m, 3\), got \(5, 4\)', id='vertices'),
         pytest.param(lambda: Ellipsoid(np.eye(3), np.zeros(2)), r'got \(3, 3\) and \(2,\)', id='ellipsoid'),
+        pytest.param(lambda: Ellipsoid(np.diag([1.0, 0.0]), np.zeros(2)), 'A must be invertible', id='singular'),
         pytest.param(lambda: random_polygon(5) + Ellipsoid(np.eye(3), np.zeros(3)), r'got \[2, 3\]', id='sum'),
     ],
 )
