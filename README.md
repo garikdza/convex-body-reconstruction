@@ -10,10 +10,10 @@ Reconstruction of a convex body in 2D or 3D from noisy measurements of its suppo
   <img src="examples/figures/animation_2d.gif" width="800"
        alt="A polygon estimate tightening around a rounded heptagon as the number of measurements grows from 5 to 400, beside its L2 and Hausdorff errors falling with k">
 </p>
-<p align="center"><sub>Reconstruction from k = 5 to 400 noisy measurements, and its error against k.</sub></p>
+<p align="center"><sub>Reconstruction from k = 5 to 400 noisy measurements</sub></p>
 
-The support function of a convex body K is h<sub>K</sub>(u) = max<sub>x∈K</sub> ⟨x, u⟩, how far K extends in the
-direction u. Given unit directions u<sub>1</sub>, …, u<sub>k</sub> and measurements
+The support function of a convex body K assigns to each unit vector u the value
+h<sub>K</sub>(u) = max<sub>x∈K</sub> ⟨x, u⟩, how far K extends in the direction u. Given unit directions u<sub>1</sub>, …, u<sub>k</sub> and measurements
 y<sub>i</sub> = h<sub>K</sub>(u<sub>i</sub>) + noise, the estimator finds the support values h<sub>1</sub>, …,
 h<sub>k</sub> of a convex body closest to the measurements and returns the polytope
 {x : ⟨x, u<sub>i</sub>⟩ ≤ h<sub>i</sub> for all i} ([Prince & Willsky, 1990](https://doi.org/10.1109/34.50623)). As
