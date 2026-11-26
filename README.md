@@ -1,6 +1,6 @@
 # Convex Body Reconstruction
 
-[![codecov](https://codecov.io/gh/garikdza/Convex_Body_Reconstruction/branch/main/graph/badge.svg)](https://codecov.io/gh/garikdza/Convex_Body_Reconstruction)
+[![codecov](https://codecov.io/gh/garikdza/convex-body-reconstruction/branch/main/graph/badge.svg)](https://codecov.io/gh/garikdza/convex-body-reconstruction)
 [![Python](https://img.shields.io/badge/python-%E2%89%A53.10-blue.svg)](pyproject.toml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
@@ -51,8 +51,8 @@ k grows the polytope converges to K ([Gardner, Kiderlen & Milanfar, 2006](https:
 ## Install
 
 ```bash
-git clone https://github.com/garikdza/Convex_Body_Reconstruction
-cd Convex_Body_Reconstruction
+git clone https://github.com/garikdza/convex-body-reconstruction
+cd convex-body-reconstruction
 uv sync
 ```
 
