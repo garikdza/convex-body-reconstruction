@@ -64,15 +64,15 @@ FIGURES = Path(__file__).parent / 'figures'
 
 
 def main() -> None:
-    K = rounded_heptagon()
+    body = rounded_heptagon()
     fits = []
     for k in KS:
-        U = circle_directions(int(k), offset=OFFSET)
-        y = noisy_support(K, U, SIGMA, rng=int(k))
-        P = reconstruct(U, y)
-        fits.append((U, y, P))
-    l2 = np.array([l2_distance(K, P) for _, _, P in fits])
-    hausdorff = np.array([hausdorff_distance(K, P) for _, _, P in fits])
+        directions = circle_directions(int(k), offset=OFFSET)
+        y = noisy_support(body, directions, SIGMA, rng=int(k))
+        polytope = reconstruct(directions, y)
+        fits.append((directions, y, polytope))
+    l2 = np.array([l2_distance(body, polytope) for _, _, polytope in fits])
+    hausdorff = np.array([hausdorff_distance(body, polytope) for _, _, polytope in fits])
 
     # each frame is (index of the fit, opacity of the measurements)
     last = len(KS) - 1
@@ -109,13 +109,13 @@ def main() -> None:
         def draw(frame: tuple[int, float]) -> None:
             i, fade = frame
             handles[2].set_alpha(fade)
-            U, y, P = fits[i]
+            directions, y, polytope = fits[i]
             left.clear()
             setup_2d(left)
             if fade > 0:
-                draw_measurements(left, U, y, fade=fade)
-            draw_estimate(left, P, LSQ)
-            draw_body(left, K)
+                draw_measurements(left, directions, y, fade=fade)
+            draw_estimate(left, polytope, LSQ)
+            draw_body(left, body)
             left.set_title(f'k = {len(y)} measurements')
             # the measurement entry fades with the measurements and goes once they have
             shown = handles if fade > 0 else handles[:2]

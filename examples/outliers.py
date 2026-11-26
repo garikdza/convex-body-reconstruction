@@ -34,10 +34,10 @@ FIGURES = Path(__file__).parent / 'figures'
 
 
 def main() -> None:
-    K = rounded_heptagon()
-    U = circle_directions(K_MEASUREMENTS)
+    body = rounded_heptagon()
+    directions = circle_directions(K_MEASUREMENTS)
     rng = np.random.default_rng(SEED)
-    y = noisy_support(K, U, SIGMA, rng=rng)
+    y = noisy_support(body, directions, SIGMA, rng=rng)
     bad = np.zeros(K_MEASUREMENTS, dtype=bool)
     bad[rng.choice(K_MEASUREMENTS, size=int(OUTLIER_SHARE * K_MEASUREMENTS), replace=False)] = True
     y[bad] += rng.uniform(*OUTLIER_SHIFT, bad.sum())
@@ -45,17 +45,17 @@ def main() -> None:
     with plt.rc_context(MINIMAL):
         fig, ax = plt.subplots(figsize=FIGSIZE)
         setup_2d(ax, LIM)
-        draw_measurements(ax, U[~bad], y[~bad], alpha=MEASUREMENT_ALPHA)
+        draw_measurements(ax, directions[~bad], y[~bad], alpha=MEASUREMENT_ALPHA)
         draw_measurements(
-            ax, U[bad], y[bad], color=OUTLIER, alpha=OUTLIER_ALPHA, label=f'outlier ({OUTLIER_SHARE:.0%})'
+            ax, directions[bad], y[bad], color=OUTLIER, alpha=OUTLIER_ALPHA, label=f'outlier ({OUTLIER_SHARE:.0%})'
         )
         # the true body goes under the estimates, so the one that matches it stays visible
-        draw_body(ax, K, fill=BODY_FILL, on_top=False)
+        draw_body(ax, body, fill=BODY_FILL, on_top=False)
         for method, colour, name in (('lsq', LSQ, 'least squares'), ('lad', LAD, 'least absolute deviations')):
-            P = reconstruct(U, y, method=method)
-            error = hausdorff_distance(K, P)
+            polytope = reconstruct(directions, y, method=method)
+            error = hausdorff_distance(body, polytope)
             print(f'{method}: Hausdorff error {error:.3f}')
-            draw_estimate(ax, P, colour, label=f'{name}, error {error:.2f}', fill=0)
+            draw_estimate(ax, polytope, colour, label=f'{name}, error {error:.2f}', fill=0)
         ax.set_title(f'{OUTLIER_SHARE:.0%} of the measurements are outliers')
         ax.legend(loc='upper center', bbox_to_anchor=LEGEND_ANCHOR, ncol=2)
 

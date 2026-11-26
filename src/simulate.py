@@ -22,7 +22,7 @@ def random_polygon(n: int, rng: np.random.Generator | int | None = None) -> Poly
 
     Returns
     -------
-    P : Polytope
+    polytope : Polytope
         the polygon
     """
     rng = np.random.default_rng(rng)
@@ -45,7 +45,7 @@ def random_polytope(n: int, rng: np.random.Generator | int | None = None) -> Pol
 
     Returns
     -------
-    P : Polytope
+    polytope : Polytope
         the polytope
     """
     rng = np.random.default_rng(rng)

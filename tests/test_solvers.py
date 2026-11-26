@@ -30,17 +30,17 @@ def test_lad_inconsistent_values_cost_their_deficit(fit):
 @pytest.mark.parametrize('loss', ['lsq', 'lad'])
 @pytest.mark.parametrize('fit', FITS)
 def test_consistent_values_returned_unchanged(fit, loss: str):
-    K = random_polygon(7, rng=3)
-    U = circle_directions(40)
-    np.testing.assert_allclose(fit(U, K.support(U), loss), K.support(U), atol=TOL)
+    body = random_polygon(7, rng=3)
+    directions = circle_directions(40)
+    np.testing.assert_allclose(fit(directions, body.support(directions), loss), body.support(directions), atol=TOL)
 
 
 @pytest.mark.parametrize('loss', ['lsq', 'lad'])
 def test_local_and_pairwise_same_optimum(loss: str):
     rng = np.random.default_rng(0)
-    U = random_directions(60, 2, rng)
-    y = noisy_support(random_polygon(6, rng), U, sigma=0.2, rng=rng)
-    local, pairwise = fit_local_2d(U, y, loss), fit_pairwise(U, y, loss)
+    directions = random_directions(60, 2, rng)
+    y = noisy_support(random_polygon(6, rng), directions, sigma=0.2, rng=rng)
+    local, pairwise = fit_local_2d(directions, y, loss), fit_pairwise(directions, y, loss)
     if loss == 'lsq':  # strictly convex objective, so the optimum is unique
         np.testing.assert_allclose(local, pairwise, atol=TOL)
     else:  # the LP optimum need not be unique; its value is
@@ -50,29 +50,31 @@ def test_local_and_pairwise_same_optimum(loss: str):
 def test_pairwise_adds_constraints_beyond_neighbours_3d():
     # with one neighbour per direction the first relaxation is too loose; the generated constraints must bring the
     # result back to the noise-free support values
-    K = random_polytope(12, rng=1)
-    U = sphere_directions(80)
-    np.testing.assert_allclose(fit_pairwise(U, K.support(U), n_neighbors=1), K.support(U), atol=TOL)
+    body = random_polytope(12, rng=1)
+    directions = sphere_directions(80)
+    np.testing.assert_allclose(
+        fit_pairwise(directions, body.support(directions), n_neighbors=1), body.support(directions), atol=TOL
+    )
 
 
 def test_pairwise_gives_up_after_max_rounds():
-    U = sphere_directions(80)
-    y = noisy_support(random_polytope(12, rng=1), U, sigma=0.1, rng=2)
+    directions = sphere_directions(80)
+    y = noisy_support(random_polytope(12, rng=1), directions, sigma=0.1, rng=2)
     with pytest.raises(RuntimeError, match='max_rounds=1'):
-        fit_pairwise(U, y, n_neighbors=1, max_rounds=1)
+        fit_pairwise(directions, y, n_neighbors=1, max_rounds=1)
 
 
 @pytest.mark.parametrize(
-    ('U', 'match'),
+    ('directions', 'match'),
     [
         pytest.param(sphere_directions(10), 'only available in 2D', id='3d'),
         pytest.param(np.vstack([circle_directions(4), [[1.0, 0.0]]]), 'distinct', id='repeated'),
         pytest.param(circle_directions(20)[:8], 'closed half-plane', id='half-plane'),
     ],
 )
-def test_local_bad_directions_raise(U: np.ndarray, match: str):
+def test_local_bad_directions_raise(directions: np.ndarray, match: str):
     with pytest.raises(ValueError, match=match):
-        fit_local_2d(U, np.ones(len(U)))
+        fit_local_2d(directions, np.ones(len(directions)))
 
 
 @pytest.mark.parametrize('fit', FITS)

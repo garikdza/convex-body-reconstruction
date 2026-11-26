@@ -25,35 +25,35 @@ class ConvexBody(ABC):
         """Dimension of the space, 2 or 3."""
 
     @abstractmethod
-    def support(self, U: np.ndarray) -> np.ndarray:
+    def support(self, directions: np.ndarray) -> np.ndarray:
         """
         The support function at each direction.
 
         Parameters
         ----------
-        U : np.ndarray
+        directions : np.ndarray
             directions, shape ``(k, d)``
 
         Returns
         -------
         h : np.ndarray
-            ``h_K(u)`` for each row ``u`` of ``U``, shape ``(k,)``
+            ``h_K(u)`` for each row ``u`` of ``directions``, shape ``(k,)``
         """
 
     @abstractmethod
-    def support_points(self, U: np.ndarray) -> np.ndarray:
+    def support_points(self, directions: np.ndarray) -> np.ndarray:
         """
         A point of the body attaining the support function at each direction.
 
         Parameters
         ----------
-        U : np.ndarray
+        directions : np.ndarray
             directions, shape ``(k, d)``
 
         Returns
         -------
         X : np.ndarray
-            for each row ``u`` of ``U``, a point ``x`` of ``K`` with ``<x, u> = h_K(u)``, shape ``(k, d)``
+            for each row ``u`` of ``directions``, a point ``x`` of the body with ``<x, u> = h_K(u)``, shape ``(k, d)``
         """
 
     def to_polytope(self, n: int | None = None) -> 'Polytope':
@@ -68,7 +68,7 @@ class ConvexBody(ABC):
 
         Returns
         -------
-        P : Polytope
+        polytope : Polytope
             convex hull of the support points
         """
         n = n or POLYTOPE_DIRECTIONS[self.dim]
@@ -98,9 +98,9 @@ class Polytope(ConvexBody):
         self._hull = ConvexHull(self._vertices)
 
     @classmethod
-    def from_halfspaces(cls, U: np.ndarray, h: np.ndarray) -> 'Polytope':
-        """The polytope ``{x : <x, u_i> <= h_i for all i}`` for normals ``U`` and offsets ``h``."""
-        return cls(halfspace_vertices(U, h))
+    def from_halfspaces(cls, directions: np.ndarray, h: np.ndarray) -> 'Polytope':
+        """The polytope ``{x : <x, u_i> <= h_i for all i}`` for normals ``directions`` and offsets ``h``."""
+        return cls(halfspace_vertices(directions, h))
 
     @property
     def vertices(self) -> np.ndarray:
@@ -121,11 +121,11 @@ class Polytope(ConvexBody):
         """Area in 2D, volume in 3D."""
         return float(self._hull.volume)
 
-    def support(self, U: np.ndarray) -> np.ndarray:
-        return (np.atleast_2d(U) @ self._vertices.T).max(axis=1)
+    def support(self, directions: np.ndarray) -> np.ndarray:
+        return (np.atleast_2d(directions) @ self._vertices.T).max(axis=1)
 
-    def support_points(self, U: np.ndarray) -> np.ndarray:
-        return self._vertices[(np.atleast_2d(U) @ self._vertices.T).argmax(axis=1)]
+    def support_points(self, directions: np.ndarray) -> np.ndarray:
+        return self._vertices[(np.atleast_2d(directions) @ self._vertices.T).argmax(axis=1)]
 
     def to_polytope(self, n: int | None = None) -> 'Polytope':
         return self
@@ -136,39 +136,41 @@ class Polytope(ConvexBody):
 
 class Ellipsoid(ConvexBody):
     """
-    The ellipse or ellipsoid ``{c + A z : |z| <= 1}``.
+    The ellipse or ellipsoid ``{c + M z : |z| <= 1}`` for the matrix ``M``.
 
     Parameters
     ----------
-    A : np.ndarray
+    matrix : np.ndarray
         invertible shape matrix, shape ``(d, d)``
     center : np.ndarray
         centre ``c``, shape ``(d,)``
     """
 
-    def __init__(self, A: np.ndarray, center: np.ndarray) -> None:
-        self.A = np.asarray(A, dtype=float)
+    def __init__(self, matrix: np.ndarray, center: np.ndarray) -> None:
+        self.matrix = np.asarray(matrix, dtype=float)
         self.center = np.asarray(center, dtype=float)
         d = self.center.size
-        if self.center.shape != (d,) or self.A.shape != (d, d):
-            raise ValueError(f'A must be (d, d) for a center of shape (d,), got {self.A.shape} and {self.center.shape}')
-        if np.linalg.matrix_rank(self.A) < d:
-            raise ValueError('A must be invertible')
+        if self.center.shape != (d,) or self.matrix.shape != (d, d):
+            raise ValueError(
+                f'matrix must be (d, d) for a center of shape (d,), got {self.matrix.shape} and {self.center.shape}'
+            )
+        if np.linalg.matrix_rank(self.matrix) < d:
+            raise ValueError('matrix must be invertible')
 
     @property
     def dim(self) -> int:
         return self.center.shape[0]
 
-    def support(self, U: np.ndarray) -> np.ndarray:
-        U = np.atleast_2d(U)
-        return U @ self.center + np.linalg.norm(U @ self.A, axis=1)
+    def support(self, directions: np.ndarray) -> np.ndarray:
+        directions = np.atleast_2d(directions)
+        return directions @ self.center + np.linalg.norm(directions @ self.matrix, axis=1)
 
-    def support_points(self, U: np.ndarray) -> np.ndarray:
-        W = np.atleast_2d(U) @ self.A
-        return self.center + (W / np.linalg.norm(W, axis=1, keepdims=True)) @ self.A.T
+    def support_points(self, directions: np.ndarray) -> np.ndarray:
+        scaled = np.atleast_2d(directions) @ self.matrix
+        return self.center + (scaled / np.linalg.norm(scaled, axis=1, keepdims=True)) @ self.matrix.T
 
     def __repr__(self) -> str:
-        return f'Ellipsoid(A={self.A.tolist()}, center={self.center.tolist()})'
+        return f'Ellipsoid(matrix={self.matrix.tolist()}, center={self.center.tolist()})'
 
 
 class MinkowskiSum(ConvexBody):
@@ -182,8 +184,8 @@ class MinkowskiSum(ConvexBody):
     """
 
     def __init__(self, parts: tuple[ConvexBody, ...]) -> None:
-        self.parts = tuple(q for K in parts for q in (K.parts if isinstance(K, MinkowskiSum) else (K,)))
-        dims = [K.dim for K in self.parts]
+        self.parts = tuple(q for body in parts for q in (body.parts if isinstance(body, MinkowskiSum) else (body,)))
+        dims = [body.dim for body in self.parts]
         if len(set(dims)) != 1:
             raise ValueError(f'summands must have the same dimension, got {dims}')
 
@@ -191,11 +193,11 @@ class MinkowskiSum(ConvexBody):
     def dim(self) -> int:
         return self.parts[0].dim
 
-    def support(self, U: np.ndarray) -> np.ndarray:
-        return sum(K.support(U) for K in self.parts)
+    def support(self, directions: np.ndarray) -> np.ndarray:
+        return sum(body.support(directions) for body in self.parts)
 
-    def support_points(self, U: np.ndarray) -> np.ndarray:
-        return sum(K.support_points(U) for K in self.parts)
+    def support_points(self, directions: np.ndarray) -> np.ndarray:
+        return sum(body.support_points(directions) for body in self.parts)
 
     def __repr__(self) -> str:
         return ' + '.join(map(repr, self.parts))

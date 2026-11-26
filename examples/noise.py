@@ -36,17 +36,19 @@ RESULTS = FIGURES / 'noise.npz'
 
 def compute() -> dict[str, np.ndarray]:
     """L2 and Hausdorff errors of every method and draw, shape ``(len(SIGMAS), DRAWS)`` per method."""
-    K = rounded_heptagon()
-    U = circle_directions(K_MEASUREMENTS)
+    body = rounded_heptagon()
+    directions = circle_directions(K_MEASUREMENTS)
     results = {'sigmas': SIGMAS}
     for method, _, _ in METHODS:
         l2, hausdorff = np.zeros((len(SIGMAS), DRAWS)), np.zeros((len(SIGMAS), DRAWS))
         for a, sigma in enumerate(SIGMAS):
             for draw in range(DRAWS):
                 # the same noise for both methods, so they are compared on identical measurements
-                P = reconstruct(U, noisy_support(K, U, sigma, rng=SEED_STRIDE * a + draw), method=method)
-                l2[a, draw] = l2_distance(K, P)
-                hausdorff[a, draw] = hausdorff_distance(K, P)
+                polytope = reconstruct(
+                    directions, noisy_support(body, directions, sigma, rng=SEED_STRIDE * a + draw), method=method
+                )
+                l2[a, draw] = l2_distance(body, polytope)
+                hausdorff[a, draw] = hausdorff_distance(body, polytope)
             print(f'{method} σ={sigma:<6.3f} L2 {np.median(l2[a]):.4f}  Hausdorff {np.median(hausdorff[a]):.4f}')
         results[f'l2_{method}'] = l2
         results[f'hausdorff_{method}'] = hausdorff

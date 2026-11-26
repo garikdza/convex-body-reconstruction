@@ -37,7 +37,7 @@ src = [".", "examples"]
 extend-exclude = ["*.ipynb"]
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP", "B"]
+select = ["E", "F", "I", "UP", "B", "N"]
 
 [tool.ruff.format]
 quote-style = "single"

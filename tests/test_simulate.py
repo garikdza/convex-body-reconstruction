@@ -7,8 +7,8 @@ from src.simulate import noisy_support, random_polygon, random_polytope
 
 
 def test_noisy_support_noise_standard_deviation(square: Polytope):
-    U = circle_directions(20_000)
-    noise = noisy_support(square, U, sigma=0.1, rng=0) - square.support(U)
+    directions = circle_directions(20_000)
+    noise = noisy_support(square, directions, sigma=0.1, rng=0) - square.support(directions)
     # the sample standard deviation of n normal draws has standard error sigma / sqrt(2n) = 0.0005
     assert np.std(noise) == pytest.approx(0.1, abs=0.002)
 

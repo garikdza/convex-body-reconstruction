@@ -62,17 +62,18 @@ uv sync
 import numpy as np
 from src import circle_directions, hausdorff_distance, random_polygon, reconstruct
 
-K = random_polygon(7, rng=0)                                     # a test body
-U = circle_directions(200)                                       # 200 unit directions
-y = K.support(U) + 0.05 * np.random.default_rng(1).standard_normal(200)  # noisy support values
+body = random_polygon(7, rng=0)                                  # a test body
+directions = circle_directions(200)                              # 200 unit directions
+noise = 0.05 * np.random.default_rng(1).standard_normal(200)
+y = body.support(directions) + noise                             # noisy support values
 
-P = reconstruct(U, y)                                            # the estimate, a Polytope; method='lad' is robust
-P.vertices                                                       # its vertices
-hausdorff_distance(K, P)                                         # its distance to K
+estimate = reconstruct(directions, y)                            # a Polytope; method='lad' is robust
+estimate.vertices                                                # its vertices
+hausdorff_distance(body, estimate)                               # its distance to the body
 ```
 
-In 3D, take the directions from `sphere_directions(k)` and a body such as `random_polytope(n)` or `Ellipsoid(A, c)`.
-`noisy_support(K, U, sigma)` simulates the measurements in one call.
+In 3D, take the directions from `sphere_directions(k)` and a body such as `random_polytope(n)` or `Ellipsoid(matrix, center)`.
+`noisy_support(body, directions, sigma)` simulates the measurements in one call.
 
 ## Examples
 

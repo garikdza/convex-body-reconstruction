@@ -14,7 +14,7 @@ def circle_directions(k: int, offset: float = 0.0) -> np.ndarray:
 
     Returns
     -------
-    U : np.ndarray
+    directions : np.ndarray
         directions at angles ``offset + 2πi/k``, shape ``(k, 2)``
     """
     if k < 3:
@@ -34,7 +34,7 @@ def sphere_directions(k: int) -> np.ndarray:
 
     Returns
     -------
-    U : np.ndarray
+    directions : np.ndarray
         directions, shape ``(k, 3)``
     """
     if k < 4:
@@ -70,7 +70,7 @@ def random_directions(k: int, dim: int, rng: np.random.Generator | int | None = 
 
     Returns
     -------
-    U : np.ndarray
+    directions : np.ndarray
         directions, shape ``(k, dim)``
     """
     rng = np.random.default_rng(rng)

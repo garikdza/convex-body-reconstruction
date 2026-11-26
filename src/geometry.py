@@ -6,7 +6,7 @@ from scipy.spatial import HalfspaceIntersection
 EMPTY_INTERIOR_TOL = 1e-9
 
 
-def chebyshev_center(U: np.ndarray, h: np.ndarray) -> tuple[np.ndarray, float]:
+def chebyshev_center(directions: np.ndarray, h: np.ndarray) -> tuple[np.ndarray, float]:
     """
     The largest ball inside the polyhedron ``{x : <x, u_i> <= h_i for all i}``.
 
@@ -14,7 +14,7 @@ def chebyshev_center(U: np.ndarray, h: np.ndarray) -> tuple[np.ndarray, float]:
 
     Parameters
     ----------
-    U : np.ndarray
+    directions : np.ndarray
         halfspace normals, shape ``(k, d)``
     h : np.ndarray
         halfspace offsets, shape ``(k,)``
@@ -26,13 +26,13 @@ def chebyshev_center(U: np.ndarray, h: np.ndarray) -> tuple[np.ndarray, float]:
     radius : float
         radius of the ball, 0 when the polyhedron has empty interior
     """
-    d = U.shape[1]
-    norms = np.linalg.norm(U, axis=1)
+    d = directions.shape[1]
+    norms = np.linalg.norm(directions, axis=1)
     cost = np.zeros(d + 1)
     cost[-1] = -1.0  # maximise the radius
     res = linprog(
         cost,
-        A_ub=np.column_stack([U, norms]),
+        A_ub=np.column_stack([directions, norms]),
         b_ub=h,
         bounds=[(None, None)] * d + [(0, None)],
         method='highs',
@@ -44,13 +44,13 @@ def chebyshev_center(U: np.ndarray, h: np.ndarray) -> tuple[np.ndarray, float]:
     return res.x[:d], float(res.x[-1])
 
 
-def halfspace_vertices(U: np.ndarray, h: np.ndarray) -> np.ndarray:
+def halfspace_vertices(directions: np.ndarray, h: np.ndarray) -> np.ndarray:
     """
     Vertices of the polytope ``{x : <x, u_i> <= h_i for all i}``.
 
     Parameters
     ----------
-    U : np.ndarray
+    directions : np.ndarray
         halfspace normals, shape ``(k, d)``
     h : np.ndarray
         halfspace offsets, shape ``(k,)``
@@ -60,9 +60,9 @@ def halfspace_vertices(U: np.ndarray, h: np.ndarray) -> np.ndarray:
     vertices : np.ndarray
         vertices, shape ``(m, d)``; a vertex where more than ``d`` halfspaces meet can appear more than once
     """
-    U = np.asarray(U, dtype=float)
+    directions = np.asarray(directions, dtype=float)
     h = np.asarray(h, dtype=float)
-    center, radius = chebyshev_center(U, h)
+    center, radius = chebyshev_center(directions, h)
     if radius <= EMPTY_INTERIOR_TOL * max(1.0, float(np.abs(h).max())):
         raise ValueError('halfspace intersection has empty interior')
-    return HalfspaceIntersection(np.column_stack([U, -h]), center).intersections
+    return HalfspaceIntersection(np.column_stack([directions, -h]), center).intersections

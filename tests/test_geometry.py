@@ -19,7 +19,7 @@ def test_halfspace_vertices_of_square():
 
 
 @pytest.mark.parametrize(
-    ('U', 'h', 'match'),
+    ('directions', 'h', 'match'),
     [
         # three directions in the upper-right quarter leave the lower-left side open
         pytest.param(np.array([[1, 0], [0, 1], [np.sqrt(0.5), np.sqrt(0.5)]]), np.ones(3), 'unbounded', id='unbounded'),
@@ -29,6 +29,6 @@ def test_halfspace_vertices_of_square():
         pytest.param(AXES_2D, np.array([0.0, 1.0, 0.0, 1.0]), 'empty interior', id='flat'),
     ],
 )
-def test_bad_halfspaces_raise(U: np.ndarray, h: np.ndarray, match: str):
+def test_bad_halfspaces_raise(directions: np.ndarray, h: np.ndarray, match: str):
     with pytest.raises(ValueError, match=match):
-        halfspace_vertices(U, h)
+        halfspace_vertices(directions, h)

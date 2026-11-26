@@ -10,10 +10,10 @@ def test_circle_directions_quarter_turns():
 
 
 def test_sphere_directions_unit_and_balanced():
-    U = sphere_directions(500)
-    np.testing.assert_allclose(np.linalg.norm(U, axis=1), 1)
+    directions = sphere_directions(500)
+    np.testing.assert_allclose(np.linalg.norm(directions, axis=1), 1)
     # an evenly spread set has its centre of mass near the origin
-    assert np.linalg.norm(U.mean(axis=0)) < 1e-2
+    assert np.linalg.norm(directions.mean(axis=0)) < 1e-2
 
 
 def test_random_directions_unit():

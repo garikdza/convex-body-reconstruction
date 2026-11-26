@@ -31,33 +31,33 @@ RESULTS = FIGURES / 'reconstruction_3d.npz'
 
 def compute() -> dict[str, np.ndarray]:
     """Fit each ``k`` in ``KS`` and keep the vertices of each estimate and the solve time."""
-    K = rounded_polytope()
+    body = rounded_polytope()
     results = {'ks': np.array(KS)}
     for k in KS:
-        U = sphere_directions(k)
+        directions = sphere_directions(k)
         start = time.perf_counter()
-        P = reconstruct(U, noisy_support(K, U, SIGMA, rng=k))
+        polytope = reconstruct(directions, noisy_support(body, directions, SIGMA, rng=k))
         results[f'seconds_{k}'] = np.array(time.perf_counter() - start)
-        results[f'vertices_{k}'] = P.vertices
+        results[f'vertices_{k}'] = polytope.vertices
     return results
 
 
 def plot(results: dict[str, np.ndarray]) -> None:
     """Rebuild each estimate from its saved vertices and draw it beside the true body."""
-    K = rounded_polytope()
+    body = rounded_polytope()
     panels = len(results['ks']) + 1  # the true body, then one estimate per k
     with plt.rc_context(MINIMAL):
         fig = plt.figure(figsize=FIGSIZE)
         ax = fig.add_subplot(1, panels, 1, projection='3d')
-        draw_polytope_3d(ax, K.to_polytope(), TRUTH_3D)
+        draw_polytope_3d(ax, body.to_polytope(), TRUTH_3D)
         ax.set_title('true body\n')
         for i, k in enumerate(results['ks']):
-            P = Polytope(results[f'vertices_{k}'])
+            polytope = Polytope(results[f'vertices_{k}'])
             seconds = float(results[f'seconds_{k}'])
-            error = hausdorff_distance(K, P)
+            error = hausdorff_distance(body, polytope)
             print(f'k={k:<4} Hausdorff error {error:.3f}, solved in {seconds:.2f} s')
             ax = fig.add_subplot(1, panels, i + 2, projection='3d')
-            draw_polytope_3d(ax, P, LSQ, edge_color=LSQ_EDGE)
+            draw_polytope_3d(ax, polytope, LSQ, edge_color=LSQ_EDGE)
             took = f'{seconds * 1000:.0f} ms' if seconds < 1 else f'{seconds:.1f} s'
             ax.set_title(f'k = {k} measurements\nHausdorff error {error:.3f}, solved in {took}')
         fig.subplots_adjust(**MARGINS)

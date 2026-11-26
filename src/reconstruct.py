@@ -27,30 +27,30 @@ def reconstruct(directions: np.ndarray, measurements: np.ndarray, method: Loss =
 
     Returns
     -------
-    P : Polytope
+    polytope : Polytope
         the estimate ``{x : <x, u_i> <= h_i for all i}``; its support function at ``u_i`` is the fitted ``h_i``, so
         ``P.support(directions)`` gives the fitted values and ``measurements - P.support(directions)`` the residuals
     """
-    U, y = _validate(directions, measurements, method)
-    fit = fit_local_2d if U.shape[1] == 2 else fit_pairwise
-    return Polytope.from_halfspaces(U, fit(U, y, method))
+    directions, y = _validate(directions, measurements, method)
+    fit = fit_local_2d if directions.shape[1] == 2 else fit_pairwise
+    return Polytope.from_halfspaces(directions, fit(directions, y, method))
 
 
 def _validate(directions: np.ndarray, measurements: np.ndarray, method: str) -> tuple[np.ndarray, np.ndarray]:
-    U = np.asarray(directions, dtype=float)
+    directions = np.asarray(directions, dtype=float)
     y = np.asarray(measurements, dtype=float).ravel()
-    if U.ndim != 2 or U.shape[1] not in (2, 3):
-        raise ValueError(f'directions must have shape (k, 2) or (k, 3), got {U.shape}')
-    k, d = U.shape
+    if directions.ndim != 2 or directions.shape[1] not in (2, 3):
+        raise ValueError(f'directions must have shape (k, 2) or (k, 3), got {directions.shape}')
+    k, d = directions.shape
     if y.shape != (k,):
         raise ValueError(f'expected {k} measurements, one per direction, got {y.size}')
     if k < d + 1:
         raise ValueError(f'need at least {d + 1} directions in {d}D, got {k}')
-    if not np.allclose(np.linalg.norm(U, axis=1), 1.0, atol=UNIT_TOL):
+    if not np.allclose(np.linalg.norm(directions, axis=1), 1.0, atol=UNIT_TOL):
         raise ValueError('directions must be unit vectors')
     if method not in ('lsq', 'lad'):
         raise ValueError(f"method must be 'lsq' or 'lad', got {method!r}")
     # the directions lie in a closed hemisphere iff {x : <x, u_i> <= 1} is unbounded, which chebyshev_center reports;
     # checking before the fit spares a solve whose estimate would be unbounded
-    chebyshev_center(U, np.ones(k))
-    return U, y
+    chebyshev_center(directions, np.ones(k))
+    return directions, y

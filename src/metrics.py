@@ -7,13 +7,13 @@ from src.directions import evenly_spread
 DISTANCE_DIRECTIONS = {2: 20_000, 3: 50_000}
 
 
-def hausdorff_distance(K: ConvexBody, L: ConvexBody, n_directions: int | None = None) -> float:
+def hausdorff_distance(body: ConvexBody, other: ConvexBody, n_directions: int | None = None) -> float:
     """
     Hausdorff distance between two convex bodies, ``max_u |h_K(u) - h_L(u)|`` over unit ``u``.
 
     Parameters
     ----------
-    K, L : ConvexBody
+    body, other : ConvexBody
         bodies of the same dimension
     n_directions : int | None
         number of evenly spread directions the maximum is taken over; ``None`` uses ``DISTANCE_DIRECTIONS``
@@ -23,10 +23,10 @@ def hausdorff_distance(K: ConvexBody, L: ConvexBody, n_directions: int | None = 
     distance : float
         the distance; a sampled maximum, so a lower bound that is tight for this many directions
     """
-    return float(np.abs(_support_gap(K, L, n_directions)).max())
+    return float(np.abs(_support_gap(body, other, n_directions)).max())
 
 
-def l2_distance(K: ConvexBody, L: ConvexBody, n_directions: int | None = None) -> float:
+def l2_distance(body: ConvexBody, other: ConvexBody, n_directions: int | None = None) -> float:
     """
     L2 distance between the support functions of two convex bodies, ``(mean_u (h_K(u) - h_L(u))^2)^(1/2)``.
 
@@ -35,7 +35,7 @@ def l2_distance(K: ConvexBody, L: ConvexBody, n_directions: int | None = None) -
 
     Parameters
     ----------
-    K, L : ConvexBody
+    body, other : ConvexBody
         bodies of the same dimension
     n_directions : int | None
         number of evenly spread directions the mean is taken over; ``None`` uses ``DISTANCE_DIRECTIONS``
@@ -45,13 +45,13 @@ def l2_distance(K: ConvexBody, L: ConvexBody, n_directions: int | None = None) -
     distance : float
         the distance
     """
-    return float(np.sqrt(np.mean(_support_gap(K, L, n_directions) ** 2)))
+    return float(np.sqrt(np.mean(_support_gap(body, other, n_directions) ** 2)))
 
 
-def _support_gap(K: ConvexBody, L: ConvexBody, n_directions: int | None) -> np.ndarray:
-    if K.dim != L.dim:
-        raise ValueError(f'bodies must have the same dimension, got {K.dim} and {L.dim}')
+def _support_gap(body: ConvexBody, other: ConvexBody, n_directions: int | None) -> np.ndarray:
+    if body.dim != other.dim:
+        raise ValueError(f'bodies must have the same dimension, got {body.dim} and {other.dim}')
     if n_directions is None:
-        n_directions = DISTANCE_DIRECTIONS[K.dim]
-    U = evenly_spread(n_directions, K.dim)
-    return K.support(U) - L.support(U)
+        n_directions = DISTANCE_DIRECTIONS[body.dim]
+    directions = evenly_spread(n_directions, body.dim)
+    return body.support(directions) - other.support(directions)

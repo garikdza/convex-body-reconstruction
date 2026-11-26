@@ -64,10 +64,10 @@ def draw_body(ax, body: ConvexBody, label: str | None = 'true body', fill: float
 
 
 def draw_estimate(
-    ax, P: Polytope, color: str, label: str | None = 'reconstruction', fill: float = ESTIMATE_FILL
+    ax, polytope: Polytope, color: str, label: str | None = 'reconstruction', fill: float = ESTIMATE_FILL
 ) -> None:
     """A reconstructed polygon, filled with opacity ``fill``."""
-    b = outline(P)
+    b = outline(polytope)
     if fill:
         ax.fill(b[:, 0], b[:, 1], color=color, alpha=fill, linewidth=0, zorder=Z_FILL)
     ax.plot(b[:, 0], b[:, 1], color=color, linewidth=ESTIMATE_WIDTH, label=label, zorder=Z_ESTIMATE)
@@ -75,7 +75,7 @@ def draw_estimate(
 
 def draw_measurements(
     ax,
-    U: np.ndarray,
+    directions: np.ndarray,
     y: np.ndarray,
     color: str = MEASUREMENT,
     alpha: float | None = None,
@@ -89,7 +89,7 @@ def draw_measurements(
     ----------
     ax : matplotlib.axes.Axes
         2D axes to draw on
-    U : np.ndarray
+    directions : np.ndarray
         directions, shape ``(k, 2)``
     y : np.ndarray
         measurements, shape ``(k,)``
@@ -105,8 +105,8 @@ def draw_measurements(
     if alpha is None:
         alpha = float(np.clip(MEASUREMENT_FADE / np.sqrt(len(y)), *MEASUREMENT_ALPHA))
     alpha *= fade
-    p = U * y[:, None]
-    t = np.column_stack([-U[:, 1], U[:, 0]])
+    p = directions * y[:, None]
+    t = np.column_stack([-directions[:, 1], directions[:, 0]])
     # one polyline with NaN breaks draws all the pieces in one call
     segments = np.stack([p - HALF_LENGTH * t, p + HALF_LENGTH * t, np.full_like(p, np.nan)], axis=1).reshape(-1, 2)
     ax.plot(
@@ -131,7 +131,7 @@ def _rgb(hex_colour: str) -> np.ndarray:
     return np.array([int(hex_colour[i : i + 2], 16) for i in (1, 3, 5)]) / 255
 
 
-def draw_polytope_3d(ax, P: Polytope, color: str, edge_color: str | None = None) -> None:
+def draw_polytope_3d(ax, polytope: Polytope, color: str, edge_color: str | None = None) -> None:
     """
     A 3D polytope with flat shading and, optionally, its facet edges, seen from ``ELEV`` and ``AZIM``.
 
@@ -142,19 +142,19 @@ def draw_polytope_3d(ax, P: Polytope, color: str, edge_color: str | None = None)
     ----------
     ax : mpl_toolkits.mplot3d.axes3d.Axes3D
         3D axes to draw on
-    P : Polytope
+    polytope : Polytope
         3D polytope
     color : str
         base colour as ``'#rrggbb'``, darkened on faces turned away from the light
     edge_color : str | None
         colour of the facet edges; ``None`` draws none
     """
-    hull = P.hull
+    hull = polytope.hull
     normals = hull.equations[:, :3]  # outward unit normals
     front = normals @ _unit(ELEV, AZIM) > FRONT_TOL
     intensity = AMBIENT + (1 - AMBIENT) * np.clip(normals[front] @ _unit(LIGHT_ELEV, LIGHT_AZIM), 0, 1)
     face_colours = np.clip(_rgb(color) * (SHADE_BASE + SHADE_GAIN * intensity[:, None]), 0, 1)
-    x, y, z = P.vertices.T
+    x, y, z = polytope.vertices.T
     surface = ax.plot_trisurf(x, y, z, triangles=hull.simplices[front], shade=False)
     surface.set_facecolor(face_colours)
     surface.set_edgecolor(face_colours)  # hides the seams between triangles of one facet
@@ -166,7 +166,7 @@ def draw_polytope_3d(ax, P: Polytope, color: str, edge_color: str | None = None)
         for t in np.flatnonzero(front):
             for j, nb in enumerate(hull.neighbors[t]):
                 if (nb > t or not front[nb]) and normals[t] @ normals[nb] < 1 - COPLANAR_TOL:
-                    points += [*P.vertices[np.delete(hull.simplices[t], j)], np.full(3, np.nan)]
+                    points += [*polytope.vertices[np.delete(hull.simplices[t], j)], np.full(3, np.nan)]
         ax.plot(*np.array(points).T, color=edge_color, linewidth=EDGE_WIDTH, alpha=EDGE_ALPHA)
 
     ax.set_xlim(-LIM_3D, LIM_3D)
